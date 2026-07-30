@@ -23,6 +23,29 @@ direction changes. Do not write one for routine implementation that the diff exp
 
 ---
 
+## 2026-07-30 — Stage 0 — QA remediation; golden set gateable (pre-0.2)
+
+**Changed:** Closed P0/P1 findings from [qa_report_stage0.md](qa_report_stage0.md).
+
+| Bug | Fix |
+|---|---|
+| BUG-004 | Committed `backend/` + datasets + corpus metadata |
+| BUG-001 | Dropped synthetic `auth0-url-*` golds; reharvested; **357** mirror-backed answerable at **100%** coverage |
+| BUG-002 | Removed forum link-absence → unanswerable heuristic |
+| BUG-003 | Replaced absurdist-majority negatives with 25 near-miss + 6 absurdist (`negative_slice`) |
+| BUG-005/007/008 | `expected_commit.txt` pin enforced; parse uses committed `redirects_flat.json` (no default `node require`) |
+| BUG-006/009/010/011/012/013 | Seeded spot-check; PII redaction; harvest failure ledger; index rebuild; pytest; head+tail truncate |
+
+**Why BUG-001 = drop + reharvest (not scrape auth0.com):** same ToS discipline as rejecting Elastic.
+Thin mirror-backed set (~220) was grown by more Discourse harvest, not production HTML.
+
+**Unblocks:** Task 0.2 ingest/embed against a golden set whose recall ceiling is no longer 0.576.
+
+**Open:**
+- ~20% first-link label noise remains (BUG-014) — revisit before gate call
+- Design partner still unidentified
+- Metric runner still absent (0.3)
+
 ## 2026-07-30 — Stage 0 — Auth0 proxy corpus selected; golden set built (task 0.1)
 
 **Changed:** Implemented Stage 0 task 0.1. Scaffolded `backend/` with uv. Fetched Auth0 docs from

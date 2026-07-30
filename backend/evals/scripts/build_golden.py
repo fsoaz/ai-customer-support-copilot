@@ -1,10 +1,15 @@
-"""Build retrieval_golden.jsonl from Auth0 forum raw JSON + docs manifest."""
+"""Build retrieval_golden.jsonl from Auth0 forum raw JSON + docs manifest.
+
+Only mirror-backed golds (manifest hits) are kept — no synthetic auth0-url-* (BUG-001).
+Unanswerable rows are hand-authored only (BUG-002/003).
+"""
 
 from __future__ import annotations
 
 import argparse
 import hashlib
 import json
+import random
 import re
 import sys
 from html import unescape
@@ -18,46 +23,57 @@ REDIRECTS_PATH = ROOT / "corpus" / "auth0" / "docs" / "redirects_flat.json"
 FORUM_RAW = ROOT / "corpus" / "auth0" / "forum" / "raw"
 OUT_PATH = ROOT / "datasets" / "retrieval_golden.jsonl"
 SPOT_CANDIDATES = ROOT / "datasets" / "spot_check_candidates.jsonl"
+COVERAGE_PATH = ROOT / "datasets" / "coverage_report.json"
 
 DOC_BASE = "https://auth0.com/docs"
 DOCS_HREF_RE = re.compile(
     r"https?://(?:www\.)?auth0\.com/docs(/[^\s\"'<>#]+)?",
     re.IGNORECASE,
 )
+EMAIL_RE = re.compile(r"[\w.+-]+@[\w-]+\.[\w.]+")
+# tenant-looking hosts: foo.us.auth0.com / foo.eu.auth0.com / custom.auth0.com
+TENANT_RE = re.compile(
+    r"\b[a-z0-9][a-z0-9-]{1,40}\.(?:us|eu|au|jp|uk)?\.?auth0\.com\b",
+    re.IGNORECASE,
+)
+CLIENT_SECRET_RE = re.compile(r"\bclient_secret\b", re.IGNORECASE)
 
-# Hand-authored questions Auth0 docs do not cover (refusal / unanswerable path).
-HAND_UNANSWERABLE: list[str] = [
-    "How do I configure Auth0 to mint Solana wallet addresses for every social login?",
-    "Where is the Auth0 setting that disables GDPR for EU tenants permanently?",
-    "How do I enable Auth0's built-in COBOL mainframe connector for AS/400?",
-    "What is the Auth0 API endpoint to refund a Stripe charge from an Action?",
-    "How do I make Auth0 send push notifications via WhatsApp Business API natively?",
-    "Where do I configure Auth0's native Kubernetes operator for on-prem Redis sessions?",
+# Near-miss negatives: Auth0 vocabulary, plausible mechanism, not a real docs feature.
+HAND_NEAR_MISS: list[str] = [
+    "How do I enable Auth0's Dashboard toggle for device attestation on desktop Electron apps?",
+    "Where do I set a tenant-wide default that forces PKCE on all legacy Regular Web Applications retrospectively?",
+    "How can I configure per-Organization custom SMS OTP sender without writing a custom Action?",
+    "What is the Management API endpoint to clone an entire tenant including secrets into another region?",
+    "How do I enable Auth0 Lock native biometric PIN fallback for web Universal Login?",
+    "Where in the Dashboard do I configure Auth0 to mint pairwise pairwise-subject identifiers per RP by default?",
+    "How can I set Actions to run on the Authentication API /oauth/token endpoint for ROPG only via UI?",
+    "What setting enables Auth0 Organizations to inherit MFA policies from a parent Organization hierarchy?",
+    "How do I configure Auth0 to auto-rotate signing keys weekly and push JWKS to my CDN without downtime hooks?",
+    "Where do I enable silent passwordless email OTP for machine-to-machine applications?",
+    "How can I attach custom SAML AttributeConsumingService indexes from the Dashboard without metadata edits?",
+    "What is the Auth0 feature to version Universal Login prompts per git branch of my app?",
+    "How do I configure Auth0 Forms to write directly to Salesforce Opportunity Stage on submit without Actions?",
+    "Where do I enable continuous access evaluation (CAE) style token revocation for SPA refresh tokens in free tier?",
+    "How can I force Auth0 to issue only encrypted ID tokens (JWE) for all OIDC clients via a tenant flag?",
+    "What Dashboard page configures Auth0 as an SCIM 2.0 client pushing users into Workday HCM nightly?",
+    "How do I enable per-connection DPoP requirement for social Google logins?",
+    "Where do I configure Auth0 to store refresh tokens exclusively in HttpOnly cookies for Regular Web Apps without a BFF?",
+    "How can I set a custom ACR value that Universal Login must satisfy before issuing tokens, without Actions?",
+    "What is the built-in Auth0 connector for syncing blocked users to my Okta Workforce org in real time?",
+    "How do I enable Auth0 log streaming with field-level encryption keys I manage in AWS KMS from the Dashboard alone?",
+    "Where do I configure tenant-level allowlists that block authentication from Tor exit nodes automatically?",
+    "How can I make Auth0 issue RFC 9068 JWT access tokens for my API by flipping one Application setting?",
+    "What setting lets Organizations define their own custom database connection scripts independently of the tenant?",
+    "How do I enable Auth0's native passkey attestation conveyance preference UI for platform authenticators only?",
+]
+
+# Absurdist sanity-floor negatives — tracked as negative_slice=absurdist; never average with near-miss.
+HAND_ABSURDIST: list[str] = [
     "How can Auth0 automatically translate my Universal Login page into Klingon?",
-    "What Auth0 Dashboard toggle enables free lifetime Enterprise support?",
-    "How do I use Auth0 as a payment gateway for cryptocurrency subscriptions?",
-    "Where is the Auth0 feature that deletes all competitor IdP tenants from the internet?",
-    "How do I configure Auth0 to bypass MFA for users named Alice on weekends only via UI?",
-    "What is Auth0's official SOAP 1.1 federation connector for Windows Server 2003?",
-    "How do I export Auth0 user passwords in plaintext for migration audits?",
-    "Where can I buy Auth0 credits with airline miles inside the Dashboard?",
-    "How do I enable Auth0's quantum-resistant lattice OTP factor in the free plan?",
-    "What Action secret lets me SSH into Auth0's production database?",
-    "How do I configure Auth0 to host my company's blog on auth0.com/docs?",
-    "Where is the Auth0 toggle that makes ID tokens legally binding contracts?",
     "How do I stream Auth0 logs directly into a fax machine via the Management API?",
-    "What is the Auth0 GraphQL mutation to rename another customer's tenant?",
-    "How do I enable Auth0's built-in TikTok Shop checkout for B2B Organizations?",
-    "Where do I configure Auth0 to act as an SMTP relay for arbitrary domains?",
-    "How can I make Auth0 issue X.509 client certs from a Let's Encrypt integration in Actions?",
-    "What Dashboard page configures Auth0's offline air-gapped USB key login?",
-    "How do I turn on Auth0's native COBOL-to-OIDC protocol translator?",
-    "Where is the setting for Auth0 to auto-post answers on Stack Overflow for my tickets?",
-    "How do I configure Auth0 Organizations to bill end-users via Western Union?",
-    "What is the undocumented Auth0 header that disables rate limits tenant-wide forever?",
-    "How do I use Auth0 Lock to render a full Excel spreadsheet editor in the login widget?",
-    "Where do I enable Auth0's satellite phone MFA channel for maritime tenants?",
-    "How can Auth0 automatically open GitHub PRs to fix my application bugs after failed logins?",
+    "Where can I buy Auth0 credits with airline miles inside the Dashboard?",
+    "What Action secret lets me SSH into Auth0's production database?",
+    "How do I enable Auth0's built-in COBOL mainframe connector for AS/400?",
     "What Auth0 feature maps user emails to their physical home addresses without consent?",
 ]
 
@@ -107,11 +123,8 @@ def extract_docs_links(html: str) -> list[str]:
         href = a["href"]
         if "auth0.com/docs" in href:
             links.append(href)
-    # Also catch bare URLs in cooked HTML
     for m in DOCS_HREF_RE.finditer(html or ""):
-        full = m.group(0)
-        links.append(full)
-    # Normalize
+        links.append(m.group(0))
     out: list[str] = []
     seen: set[str] = set()
     for link in links:
@@ -119,7 +132,7 @@ def extract_docs_links(html: str) -> list[str]:
         if "auth0.com/docs" in link:
             path = link.split("auth0.com/docs", 1)[1]
         path = normalize_path(path)
-        if path == "/" or path.startswith("/api/"):
+        if path == "/" or path.startswith("/api"):
             continue
         canon_url = f"{DOC_BASE}{path}"
         if canon_url not in seen:
@@ -128,72 +141,75 @@ def extract_docs_links(html: str) -> list[str]:
     return out
 
 
-def synthetic_doc_id(path: str) -> str:
-    digest = hashlib.sha1(path.encode("utf-8")).hexdigest()[:12]
-    slug = re.sub(r"[^a-zA-Z0-9]+", "-", path.strip("/")).strip("-").lower()
-    if len(slug) > 80:
-        slug = slug[:80].rstrip("-")
-    return f"auth0-url-{slug}-{digest}"
-
-
 def resolve(
     url: str,
     url_to_id: dict[str, str],
     redirects: dict[str, str],
     id_to_doc: dict,
-    *,
-    allow_synthetic: bool = True,
 ) -> tuple[str, str] | None:
+    """Resolve only against the MIT mirror manifest — no synthetic IDs (BUG-001)."""
     path = url
     if "auth0.com/docs" in url:
         path = url.split("auth0.com/docs", 1)[1]
     path = normalize_path(path)
-    # Skip empty / root / API reference dumps that are not article pages
-    if path in {"/", ""} or path.startswith("/api/") or path.startswith("/api"):
+    if path in {"/", ""}:
         return None
-    # Require at least one path segment beyond /docs
-    if path.count("/") < 1 or path == "/":
-        return None
-    segments = [s for s in path.split("/") if s]
-    if len(segments) < 1:
-        return None
-
-    canonical = follow_redirects(path, redirects)
     candidates = [
         path,
-        canonical,
+        follow_redirects(path, redirects),
         f"{DOC_BASE}{path}",
-        f"{DOC_BASE}{canonical}",
+        f"{DOC_BASE}{follow_redirects(path, redirects)}",
     ]
     for c in candidates:
         gold_id = url_to_id.get(c)
         if gold_id and gold_id in id_to_doc:
             return gold_id, id_to_doc[gold_id]["canonical_url"]
+    return None
 
-    if not allow_synthetic:
-        return None
-    # Newer Auth0 docs URLs often are not in the MIT GitHub mirror yet; still valid gold labels.
-    if len(segments) < 2 and segments[0] in {"index", "get-started"}:
-        return None
-    return synthetic_doc_id(canonical), f"{DOC_BASE}{canonical}"
+
+def redact_question(text: str) -> str:
+    """Redact emails and tenant hosts at build time (BUG-009)."""
+    email_i = 0
+    tenant_i = 0
+
+    def _email(_m: re.Match[str]) -> str:
+        nonlocal email_i
+        email_i += 1
+        return f"<EMAIL_{email_i}>"
+
+    def _tenant(_m: re.Match[str]) -> str:
+        nonlocal tenant_i
+        tenant_i += 1
+        return f"<TENANT_{tenant_i}>"
+
+    text = EMAIL_RE.sub(_email, text)
+    text = TENANT_RE.sub(_tenant, text)
+    text = CLIENT_SECRET_RE.sub("<CLIENT_SECRET>", text)
+    return text
+
+
+def truncate_question(text: str, limit: int = 2000) -> str:
+    """Keep head and tail so the actual question is not always dropped (BUG-013)."""
+    if len(text) <= limit:
+        return text
+    head = limit // 2 - 10
+    tail = limit - head - 5
+    return text[:head].rstrip() + "\n…\n" + text[-tail:].lstrip()
 
 
 def question_from_topic(topic: dict) -> str:
     posts = topic.get("post_stream", {}).get("posts") or []
     if not posts:
-        title = topic.get("title") or ""
-        return title.strip()
+        return redact_question((topic.get("title") or "").strip())
     op = posts[0]
     body = html_to_text(op.get("cooked") or "")
     title = (topic.get("title") or "").strip()
     if body:
-        # Prefer title + body for ticket-like phrasing; cap length
-        title_in_body = title.lower() in body.lower()[:120].lower()
+        title_in_body = bool(title) and title.lower() in body.lower()[:120].lower()
         q = body if title_in_body else f"{title}\n\n{body}"
-        if len(q) > 2000:
-            q = q[:2000].rstrip() + "…"
-        return q
-    return title
+    else:
+        q = title
+    return redact_question(truncate_question(q))
 
 
 def accepted_answer_htmls(topic: dict) -> list[str]:
@@ -201,11 +217,9 @@ def accepted_answer_htmls(topic: dict) -> list[str]:
     for ans in topic.get("accepted_answers") or []:
         if ans.get("cooked"):
             htmls.append(ans["cooked"])
-    posts = topic.get("post_stream", {}).get("posts") or []
-    for p in posts:
+    for p in topic.get("post_stream", {}).get("posts") or []:
         if p.get("accepted_answer") and p.get("cooked"):
             htmls.append(p["cooked"])
-    # Dedupe while preserving order
     seen: set[str] = set()
     out: list[str] = []
     for h in htmls:
@@ -226,10 +240,40 @@ def normalize_question_key(q: str) -> str:
     return q[:500]
 
 
+def diversify(rows: list[dict], target: int) -> list[dict]:
+    """Round-robin by gold_doc_id then fill to target."""
+    by_doc: dict[str, list[dict]] = {}
+    for r in rows:
+        by_doc.setdefault(r["gold_doc_id"], []).append(r)
+    out: list[dict] = []
+    while len(out) < min(target, len(rows)) and by_doc:
+        empty: list[str] = []
+        for doc_id, bucket in list(by_doc.items()):
+            if not bucket:
+                empty.append(doc_id)
+                continue
+            out.append(bucket.pop(0))
+            if len(out) >= target:
+                break
+        for doc_id in empty:
+            by_doc.pop(doc_id, None)
+    return out
+
+
+def stratified_spot_sample(answerable: list[dict], *, n: int, seed: int) -> list[dict]:
+    """Seeded sample stratified by whether gold is in-manifest (all should be) (BUG-006)."""
+    rng = random.Random(seed)
+    pool = list(answerable)
+    rng.shuffle(pool)
+    return pool[:n]
+
+
 def build(
     *,
     target_answerable: int,
     min_unanswerable: int,
+    spot_seed: int,
+    require_full_coverage: bool,
 ) -> None:
     if not MANIFEST_PATH.exists():
         raise SystemExit("manifest missing; run parse_docs_manifest.py")
@@ -244,15 +288,13 @@ def build(
     id_to_doc = {d["gold_doc_id"]: d for d in manifest["documents"]}
 
     answerable: list[dict] = []
-    unanswerable_forum: list[dict] = []
+    skipped_unresolved = 0
     seen_q: set[str] = set()
 
     files = sorted(FORUM_RAW.glob("*.json"))
     print(f"scanning {len(files)} forum topics")
 
     for path in files:
-        if path.name == ".gitkeep":
-            continue
         try:
             topic = json.loads(path.read_text(encoding="utf-8"))
         except json.JSONDecodeError:
@@ -277,91 +319,87 @@ def build(
         resolved: list[tuple[str, str]] = []
         for html in htmls:
             for link in extract_docs_links(html):
-                hit = resolve(link, url_to_id, redirects, id_to_doc, allow_synthetic=True)
+                hit = resolve(link, url_to_id, redirects, id_to_doc)
                 if hit:
                     resolved.append(hit)
 
-        if resolved:
-            # Prefer first docs link in the accepted answer (order of appearance)
-            gold_id, gold_url = resolved[0]
-            row = {
-                "id": pair_id(question, gold_id, tid),
-                "question": question,
-                "gold_doc_url": gold_url,
-                "gold_doc_id": gold_id,
-                "source_thread_url": thread_url,
-                "answerable": True,
-            }
-            answerable.append(row)
-            seen_q.add(qkey)
-        else:
-            answer_text = " ".join(html_to_text(h) for h in htmls).lower()
-            refusalish = any(
-                phrase in answer_text
-                for phrase in (
-                    "not supported",
-                    "not possible",
-                    "cannot be done",
-                    "isn't supported",
-                    "is not available",
-                    "feature request",
-                    "doesn't support",
-                    "does not support",
-                    "no way to",
-                    "not currently",
-                )
-            )
-            row = {
-                "id": pair_id(question, None, tid),
-                "question": question,
-                "gold_doc_url": "",
-                "gold_doc_id": "",
-                "source_thread_url": thread_url,
-                "answerable": False,
-                "_refusalish": refusalish,
-            }
-            unanswerable_forum.append(row)
-            seen_q.add(qkey)
+        if not resolved:
+            # No mirror-backed docs link — skip (do NOT invent unanswerable labels) BUG-002
+            skipped_unresolved += 1
+            continue
 
-        if len(answerable) >= target_answerable * 2:
-            # keep scanning a bit for diversity then stop early if huge
-            pass
+        gold_id, gold_url = resolved[0]
+        row = {
+            "id": pair_id(question, gold_id, tid),
+            "question": question,
+            "gold_doc_url": gold_url,
+            "gold_doc_id": gold_id,
+            "source_thread_url": thread_url,
+            "answerable": True,
+        }
+        answerable.append(row)
+        seen_q.add(qkey)
 
-    # Prefer unique gold docs for diversity
-    answerable = _diversify(answerable, target_answerable)
+    answerable = diversify(answerable, target_answerable)
 
     unanswerable: list[dict] = []
-    # Prefer refusalish forum examples
-    refusal = [r for r in unanswerable_forum if r.get("_refusalish")]
-    other = [r for r in unanswerable_forum if not r.get("_refusalish")]
-    for r in refusal + other:
-        if len(unanswerable) >= max(0, min_unanswerable - len(HAND_UNANSWERABLE)):
-            break
-        clean = {k: v for k, v in r.items() if not k.startswith("_")}
-        unanswerable.append(clean)
-
-    for i, q in enumerate(HAND_UNANSWERABLE):
-        if len(unanswerable) >= min_unanswerable and i >= 30:
-            break
+    for i, q in enumerate(HAND_NEAR_MISS):
         unanswerable.append(
             {
-                "id": pair_id(q, None, f"hand-{i}"),
+                "id": pair_id(q, None, f"near-{i}"),
                 "question": q,
                 "gold_doc_url": "",
                 "gold_doc_id": "",
                 "source_thread_url": "",
                 "answerable": False,
+                "negative_slice": "near_miss",
             }
         )
-        if len(unanswerable) >= min_unanswerable:
-            break
+    for i, q in enumerate(HAND_ABSURDIST):
+        unanswerable.append(
+            {
+                "id": pair_id(q, None, f"abs-{i}"),
+                "question": q,
+                "gold_doc_url": "",
+                "gold_doc_id": "",
+                "source_thread_url": "",
+                "answerable": False,
+                "negative_slice": "absurdist",
+            }
+        )
+    if len(unanswerable) < min_unanswerable:
+        raise SystemExit(
+            f"only {len(unanswerable)} hand unanswerables; need >= {min_unanswerable}"
+        )
 
-    # Ensure at least min_unanswerable
-    while len(unanswerable) < min_unanswerable and other:
-        r = other.pop()
-        clean = {k: v for k, v in r.items() if not k.startswith("_")}
-        if clean["id"] not in {u["id"] for u in unanswerable}:
-            unanswerable.append(clean)
+    # Coverage: every answerable gold must be in manifest
+    synthetic = [r for r in answerable if str(r["gold_doc_id"]).startswith("auth0-url-")]
+    missing = [r for r in answerable if r["gold_doc_id"] not in id_to_doc]
+    coverage = {
+        "answerable": len(answerable),
+        "unanswerable": len(unanswerable),
+        "synthetic_count": len(synthetic),
+        "missing_from_manifest": len(missing),
+        "coverage_pct": 100.0
+        if not answerable
+        else 100.0 * (len(answerable) - len(missing)) / len(answerable),
+        "skipped_unresolved_forum_topics": skipped_unresolved,
+        "forum_files_scanned": len(files),
+    }
+    COVERAGE_PATH.write_text(json.dumps(coverage, indent=2) + "\n", encoding="utf-8")
+    print(json.dumps(coverage))
+
+    if require_full_coverage and (synthetic or missing):
+        raise SystemExit(
+            f"coverage gate failed: synthetic={len(synthetic)} missing={len(missing)} "
+            f"(see {COVERAGE_PATH})"
+        )
+    if len(answerable) < 300:
+        print(
+            f"WARNING: only {len(answerable)} answerable pairs (target 300–500). "
+            "Fetch more forum topics.",
+            file=sys.stderr,
+        )
 
     rows = answerable + unanswerable
     OUT_PATH.parent.mkdir(parents=True, exist_ok=True)
@@ -369,47 +407,37 @@ def build(
         for row in rows:
             f.write(json.dumps(row, ensure_ascii=False) + "\n")
 
-    # Spot-check candidates: first 40 answerable for manual review of 20
+    spot = stratified_spot_sample(answerable, n=min(40, len(answerable)), seed=spot_seed)
     with SPOT_CANDIDATES.open("w", encoding="utf-8") as f:
-        for row in answerable[:40]:
+        meta = {"seed": spot_seed, "n": len(spot), "method": "rng_shuffle_all_answerable"}
+        f.write(json.dumps({"_meta": meta}) + "\n")
+        for row in spot:
             f.write(json.dumps(row, ensure_ascii=False) + "\n")
 
-    n_ans = sum(1 for r in rows if r["answerable"])
-    n_un = sum(1 for r in rows if not r["answerable"])
-    print(f"wrote {OUT_PATH}: {len(rows)} rows ({n_ans} answerable, {n_un} unanswerable)")
-    if n_ans < 300:
-        print(
-            f"WARNING: only {n_ans} answerable pairs (target 300–500). Fetch more forum topics.",
-            file=sys.stderr,
-        )
-
-
-def _diversify(rows: list[dict], target: int) -> list[dict]:
-    """Round-robin by gold_doc_id then fill to target."""
-    by_doc: dict[str, list[dict]] = {}
-    for r in rows:
-        by_doc.setdefault(r["gold_doc_id"], []).append(r)
-    out: list[dict] = []
-    while len(out) < min(target, len(rows)) and by_doc:
-        empty: list[str] = []
-        for doc_id, bucket in list(by_doc.items()):
-            if not bucket:
-                empty.append(doc_id)
-                continue
-            out.append(bucket.pop(0))
-            if len(out) >= target:
-                break
-        for doc_id in empty:
-            by_doc.pop(doc_id, None)
-    return out
+    print(
+        f"wrote {OUT_PATH}: {len(rows)} rows "
+        f"({len(answerable)} answerable, {len(unanswerable)} unanswerable); "
+        f"spot seed={spot_seed}"
+    )
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--target-answerable", type=int, default=400)
-    parser.add_argument("--min-unanswerable", type=int, default=35)
+    parser.add_argument("--min-unanswerable", type=int, default=30)
+    parser.add_argument("--spot-seed", type=int, default=20260730)
+    parser.add_argument(
+        "--allow-partial-coverage",
+        action="store_true",
+        help="Do not abort when golds are missing from manifest (default: abort)",
+    )
     args = parser.parse_args()
-    build(target_answerable=args.target_answerable, min_unanswerable=args.min_unanswerable)
+    build(
+        target_answerable=args.target_answerable,
+        min_unanswerable=args.min_unanswerable,
+        spot_seed=args.spot_seed,
+        require_full_coverage=not args.allow_partial_coverage,
+    )
     return 0
 
 

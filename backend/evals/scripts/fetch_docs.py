@@ -1,6 +1,7 @@
 """Fetch Auth0 documentation source (MIT) into corpus/auth0/docs/raw.
 
 Fetch is separated from parsing so the manifest can be rebuilt without re-cloning.
+The expected commit pin is required (BUG-008): silent HEAD drift is a hard failure.
 """
 
 from __future__ import annotations
@@ -16,43 +17,54 @@ REPO_URL = "https://github.com/auth0/docs.git"
 USER_AGENT = "CorpCorpusBot/0.1 (+local-research; Stage0 eval corpus)"
 
 ROOT = Path(__file__).resolve().parents[1]
-RAW_DIR = ROOT / "corpus" / "auth0" / "docs" / "raw"
-META_PATH = ROOT / "corpus" / "auth0" / "docs" / "fetch_meta.json"
+DOCS_DIR = ROOT / "corpus" / "auth0" / "docs"
+RAW_DIR = DOCS_DIR / "raw"
+META_PATH = DOCS_DIR / "fetch_meta.json"
+PIN_PATH = DOCS_DIR / "expected_commit.txt"
 
 
-def fetch(commit: str | None = None, force: bool = False) -> str:
+def expected_commit() -> str:
+    if not PIN_PATH.exists():
+        raise FileNotFoundError(
+            f"missing pin file {PIN_PATH}; refuse to clone unpinned HEAD (BUG-008)"
+        )
+    pin = PIN_PATH.read_text(encoding="utf-8").strip().splitlines()[0].strip()
+    if len(pin) < 7:
+        raise ValueError(f"invalid pin in {PIN_PATH}: {pin!r}")
+    return pin
+
+
+def fetch(*, force: bool = False, commit: str | None = None) -> str:
+    pin = commit or expected_commit()
     RAW_DIR.parent.mkdir(parents=True, exist_ok=True)
-    if RAW_DIR.exists() and any(RAW_DIR.iterdir()) and not force:
+
+    if RAW_DIR.exists() and (RAW_DIR / ".git").exists() and not force:
         sha = _git_sha(RAW_DIR)
-        print(f"docs raw already present at {RAW_DIR} (commit {sha}); use --force to re-fetch")
+        if not sha.startswith(pin) and not pin.startswith(sha):
+            raise RuntimeError(
+                f"docs raw SHA {sha} does not match pin {pin}. "
+                f"Re-run with --force to re-clone the pinned commit."
+            )
+        print(f"docs raw already present at {RAW_DIR} (commit {sha}); pin ok")
         _write_meta(sha)
         return sha
 
     if RAW_DIR.exists():
         shutil.rmtree(RAW_DIR)
 
-    cmd = [
-        "git",
-        "clone",
-        "--depth",
-        "1",
-        "--single-branch",
-        REPO_URL,
-        str(RAW_DIR),
-    ]
-    if commit:
-        # shallow clone of a specific commit needs fetch after
-        cmd = ["git", "clone", "--filter=blob:none", "--no-checkout", REPO_URL, str(RAW_DIR)]
-        subprocess.run(cmd, check=True)
-        subprocess.run(
-            ["git", "-C", str(RAW_DIR), "fetch", "--depth", "1", "origin", commit],
-            check=True,
-        )
-        subprocess.run(["git", "-C", str(RAW_DIR), "checkout", commit], check=True)
-    else:
-        subprocess.run(cmd, check=True)
+    subprocess.run(
+        ["git", "clone", "--filter=blob:none", "--no-checkout", REPO_URL, str(RAW_DIR)],
+        check=True,
+    )
+    subprocess.run(
+        ["git", "-C", str(RAW_DIR), "fetch", "--depth", "1", "origin", pin],
+        check=True,
+    )
+    subprocess.run(["git", "-C", str(RAW_DIR), "checkout", pin], check=True)
 
     sha = _git_sha(RAW_DIR)
+    if not sha.startswith(pin) and not pin.startswith(sha):
+        raise RuntimeError(f"checked out {sha} but pin is {pin}")
     _write_meta(sha)
     print(f"fetched auth0/docs @ {sha} → {RAW_DIR}")
     return sha
@@ -69,6 +81,7 @@ def _write_meta(sha: str) -> None:
             {
                 "repo": REPO_URL,
                 "commit": sha,
+                "expected_commit_file": str(PIN_PATH.relative_to(ROOT)),
                 "license": "MIT",
                 "user_agent_note": USER_AGENT,
             },
@@ -81,13 +94,17 @@ def _write_meta(sha: str) -> None:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--commit", default=None, help="Optional commit SHA to pin")
+    parser.add_argument(
+        "--commit",
+        default=None,
+        help="Override pin (defaults to expected_commit.txt)",
+    )
     parser.add_argument("--force", action="store_true", help="Re-clone even if raw exists")
     args = parser.parse_args()
     try:
         fetch(commit=args.commit, force=args.force)
-    except subprocess.CalledProcessError as exc:
-        print(f"git failed: {exc}", file=sys.stderr)
+    except (subprocess.CalledProcessError, FileNotFoundError, RuntimeError, ValueError) as exc:
+        print(f"fetch_docs failed: {exc}", file=sys.stderr)
         return 1
     return 0
 

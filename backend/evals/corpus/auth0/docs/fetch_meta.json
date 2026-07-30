@@ -1,6 +1,7 @@
 {
   "repo": "https://github.com/auth0/docs.git",
   "commit": "5258d17ede3eea0ed0e330d15f8921a542564f68",
+  "expected_commit_file": "corpus/auth0/docs/expected_commit.txt",
   "license": "MIT",
   "user_agent_note": "CorpCorpusBot/0.1 (+local-research; Stage0 eval corpus)"
 }

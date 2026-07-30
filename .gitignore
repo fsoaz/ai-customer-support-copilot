@@ -10,13 +10,10 @@ __pycache__/
 .venv/
 backend/.venv/
 
-# Stage 0 corpus raw fetches (regenerate via evals/scripts)
-backend/evals/corpus/**/docs/raw/**
-!backend/evals/corpus/**/docs/raw/
-!backend/evals/corpus/**/docs/raw/.gitkeep
-backend/evals/corpus/**/forum/raw/**
-!backend/evals/corpus/**/forum/raw/
-!backend/evals/corpus/**/forum/raw/.gitkeep
+# Stage 0 corpus raw fetches (regenerate via evals/scripts).
+# Entire directories ignored (auth0/docs clone contains a nested .git).
+backend/evals/corpus/**/docs/raw/
+backend/evals/corpus/**/forum/raw/
 
 # IDE / OS
 .idea/

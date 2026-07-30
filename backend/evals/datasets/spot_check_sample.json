@@ -1,0 +1,162 @@
+[
+  {
+    "id": "q-4b533c2cf685730d",
+    "question": "Python Token Validation\n\nI have a react single page app working to login and I get the token with the following method:\nconst token = await getAccessTokenSilently();\nI then pass this token into a back end python server but I need to make sure that token is validated.  I don’t care about the audience, just it’s a valid token that’s not expired.  I can’t seem to find any answers in the forum or the docs to this problem.",
+    "gold_doc_url": "https://auth0.com/docs/secure/tokens/json-web-tokens/validate-json-web-tokens",
+    "gold_doc_id": "auth0-articles-tokens-guides-validate-jwts-md-df63138b763c",
+    "source_thread_url": "https://community.auth0.com/t/python-token-validation/196326",
+    "answerable": true
+  },
+  {
+    "id": "q-89ef9fda26ad80ef",
+    "question": "How to Configure SMTP in Auth0 to Send Notifications Using Yournotify?\n\nI’m trying to set up Yournotify’s SMTP in Auth0 to send system emails like password resets, verification emails, and other notifications. I know Auth0 allows for custom SMTP configurations, but I’m not sure what the exact setup should look like for Yournotify.\nHas anyone successfully done this?\nWhat are the correct SMTP settings for Yournotify (host, port, authentication)?\nAre there any gotchas with TLS/SSL or sender domains when connecting to Auth0?\nHow do you handle email formatting or template customization once SMTP is configured?\nIf anyone has a working example or tips on getting this right with Yournotify, I’d really appreciate it!",
+    "gold_doc_url": "https://auth0.com/docs/secure/security-guidance/data-security/allowlist",
+    "gold_doc_id": "auth0-articles-guides-ip-whitelist-md-5ad415547bc0",
+    "source_thread_url": "https://community.auth0.com/t/how-to-configure-smtp-in-auth0-to-send-notifications-using-yournotify/185044",
+    "answerable": true
+  },
+  {
+    "id": "q-c944a2202cf9ea46",
+    "question": "Auth0 Account Linking Extension Page Mismatch\n\nHi Community,\nWe are running into 400 Bad Request errors when redirecting to the Account Linking Extension. It appears to be a Page Mismatch error in the redirect URL - the extension displays the error “You seem to have reached this page in error. Please try logging in again”.\nWe recently changed one of our tenants to a custom domain, and we think this might be the cause of the issue, but we are not too sure about which secrets should be changed in the Action to support this change.\nSo far, I have tried changing the config.token.issuer to the new custom domain, as well as changing the config.endpoints urls to be based off of the new custom domain, to no avail. I noticed that our Auth0 Management API Identifier, as well as our Account Linking Application Domain are still based off of the old default domain. The Account Linking webtask redirect url also begins with the old domain name. Am I supposed to recreate these based off of t\n…\ndpoints.linking + '?' + queryString.encode(params);\n    }\n\n    function qualifyDomain(domain) {\n        return 'https://'+domain+'/';\n    }\n\n    function apiCall(options) {\n        return new Promise(function(resolve, reject) {\n            var reqOptions = Object.assign({\n                url: options.url,\n                headers: {\n                    Authorization: 'Bearer ' + Auth0ManagementAccessToken,\n                    Accept: 'application/json'\n                },\n                json: true\n            }, options);\n\n            request(reqOptions, function handleResponse(err, response, body) {\n                if (err) {\n                    reject(err);\n                } else if (response.statusCode < 200 || response.statusCode >= 300) {\n                    console.error(LOG_TAG, 'API call failed: ', body);\n                    reject(new Error(body));\n                } else {\n                    resolve(response.body);\n                }\n            });\n        });\n    }\n};\nThanks,\nEric",
+    "gold_doc_url": "https://auth0.com/docs/manage-users/user-accounts/user-account-linking",
+    "gold_doc_id": "auth0-articles-users-concepts-overview-user-account-linking-md-ae352f567c56",
+    "source_thread_url": "https://community.auth0.com/t/auth0-account-linking-extension-page-mismatch/186553",
+    "answerable": true
+  },
+  {
+    "id": "q-2078ae706ad4837f",
+    "question": "Trying to enforce Email MFA but SMS is being triggered instead\n\nBackground\nI’m trying to enforce Email MFA only for certain users by using a Post Login Action:\nif (event.user.app_metadata?.mfa === true) {\n  api.multifactor.enable(\"email\");\n  // or api.multifactor.require(\"email\");\n}\nThe user’s email is verified (email_verified: true), and in the dashboard, it shows “MFA registered with Email.”\nThe /enrollments API returns an empty array, meaning no SMS is registered.\nYet, when the user logs in:\nA 6-digit SMS code is sent instead of an email\nOr sometimes, the user is prompted to enter a phone number to enable MFA\nThis user was created via email & password (database connection) — not Google login.\nHowever, I (as admin) have previously logged in to the Auth0 dashboard via Google using the same email address (if that matters).\nWhat I tried\nConfirmed email_verified: true\nReset MFA via both dashboard and Management API (POST /multifactor/actions/reset)\nVerified that /enrollments is empty\nEnsured no phone number exists in the user profile\nReplaced enable(“email”) with require(“email”) to force the method\nTried logging in again — still getting SMS prompt\nWhat I’m trying to achieve\nI want to:\nEnforce Email MFA only, without SMS being triggered\nEnsure that the user is never prompted to enter a phone number\nUnderstand why SMS is being triggered even when it’s not registered or enabled\nAny ideas on what might be causing this or how to enforce Email MFA more reliably?\nThanks in advance!",
+    "gold_doc_url": "https://auth0.com/docs/secure/multi-factor-authentication/multi-factor-authentication-factors/configure-email-notifications-for-mfa",
+    "gold_doc_id": "auth0-articles-mfa-guides-configure-email-md-af9bc383af73",
+    "source_thread_url": "https://community.auth0.com/t/trying-to-enforce-email-mfa-but-sms-is-being-triggered-instead/190223",
+    "answerable": true
+  },
+  {
+    "id": "q-1fafeafa945ac466",
+    "question": "Preferred approach for handling session expiration due to inactivity with django + react\n\nI have looked all around for this and read through the docs but still cannot seem to find the exact answer I am looking for.\nI have a web app using auth0 that requires inactivity timeout of 20 minutes.  I am using\n@auth0/auth0-react\nto manage everything in the react application.\nThe problem I is I cannot figure out how to correctly manage the session expiration due to idleness. Everything I have read in the docs says that the session activity is updated when calling /authorize endpoint which auth0-reacts\ngetAccessTokenSilently\ndoes when the token is expired or if its going to expire within a minute. My current auth0 settings are:\nsession idle expiration 20 minutes\nmax session expiration 24 hours\naccess token expiration 10 minutes\nConsider this scenario.\nUser logins in at 11:01\nUser does some things in the app until 11:08 then stops and session has not been updated yet because token is valid\nUser does not do anything until 11:25 but at this point the session is expired (as of 11:21) and so is token\nNow, considering the user stopped all activity at 11:08 the desire is for the session to expire at 11:28 due to inactivity. I assume this is a fairly common use case and admit I likely am overcomplicating this and just not doing it right.\nMy current approach which does not handle all scenarios is to track mouse clicks and key strokes and debounce them, do a check on when token was issued to say if the token was issued more than 2 minutes ago → when true call\ngetAccessTokenSilently\nwith\n'cacheMode': 'off'\nto get a new token and update session activity.\nHelp is greatly appreciated it.",
+    "gold_doc_url": "https://auth0.com/docs/manage-users/sessions/configure-session-lifetime-settings",
+    "gold_doc_id": "auth0-articles-api-management-guides-tenants-configure-session-lifetime-settings-md-b370896bf531",
+    "source_thread_url": "https://community.auth0.com/t/preferred-approach-for-handling-session-expiration-due-to-inactivity-with-django-react/189313",
+    "answerable": true
+  },
+  {
+    "id": "q-6b21c2f16dc191ee",
+    "question": "Custom Domain Custom Push Notification - put-pn-providers\n\nI am attempting to setup the push notification from my mobile app using the Auth0 SDK.\nOur copy link for the push notification enrollment appears to use the non custom domain url.\nI found\nhttps://auth0.com/docs/api/management/v2/guardian/put-pn-providers\nbut am having an issue putting the custom provider pn in place.\nIt is returning a 400 and I am not finding any documentation around this.\nThank you!",
+    "gold_doc_url": "https://auth0.com/docs/secure/multi-factor-authentication/multi-factor-authentication-factors/configure-push-notifications-for-mfa",
+    "gold_doc_id": "auth0-articles-mfa-guides-configure-push-md-3996832bb82b",
+    "source_thread_url": "https://community.auth0.com/t/custom-domain-custom-push-notification-put-pn-providers/189465",
+    "answerable": true
+  },
+  {
+    "id": "q-7f77c690891f8bb4",
+    "question": "Authentication page is very small\n\nBegginer here, so please excuse if this is a stupid question.\nI embed auth0 from an android app and it seems the login web page opened is very zoomed out. I do not think that I switched the setup away from universal login, I just did some branding customisations (logo, colors etc). Is there any way I can revert the setup to the default one?\nScreenshot_20251011_000927_Chrome\n1080×2340 129 KB",
+    "gold_doc_url": "https://auth0.com/docs/customize/login-pages/universal-login/customize-text-elements",
+    "gold_doc_id": "auth0-articles-universal-login-text-customization-prompts-common-md-5d90358a3fa0",
+    "source_thread_url": "https://community.auth0.com/t/authentication-page-is-very-small/193083",
+    "answerable": true
+  },
+  {
+    "id": "q-e4c5de32a639db0e",
+    "question": "Support Timeframes for .NET Client for Management API\n\nI’ve been trying to find the support timeframe for the .NET Management API client:\nGitHub - auth0/auth0.net: .NET client for the Auth0 Authentication & Management APIs. · GitHub\nWe’ve been moving along with the major versions for the NuGet package at our own pace; only upgrading when we see there is some obvious gain with the next version or if we know that is absolutely necessary. Our solution has been using the latest minor version of the v7 release. We are currently working to remove the calls using the\nenabled_clients\nfield in connection queries. Our first inclination was to migrate to the latest version of the library, v8. However, we’re finding this as a very difficult transition which will break a good chunk of our code.\nI would like to know how long we can the v7 version of the Management API will be usable. The v7 release offers a much better developer experience and v8 is a drastic step backwards in usability. Until we see similar functionality in a later version we would like to stay on v7. With other frameworks/SDKs/libraries there are often specified timeframe for support: eg .NET LTS releases supported for one year after the next LTS release. It appears that the library has two different release triggers: when the REST API is updated or when there is a refinement to the actual SDK portion of the library (structure, class naming, organization, etc). How often do you expect to be changing up the latter?\nFYI, the reason we don’t want to go to v8 is because the\nRateLimitApiException\nclass is no longer thrown. The new\nTooManyRequestsError\nmakes finding the rate limit exceedingly difficult.",
+    "gold_doc_url": "https://auth0.com/docs/troubleshoot/customer-support/product-support-matrix",
+    "gold_doc_id": "auth0-articles-support-matrix-md-a17cce5f4b9c",
+    "source_thread_url": "https://community.auth0.com/t/support-timeframes-for-net-client-for-management-api/200058",
+    "answerable": true
+  },
+  {
+    "id": "q-ee85126f9ca907f8",
+    "question": "I want to transfer users from one tenant to another tenant with password? and What are the optimal ways?\n\nI’m working on a project where we need to\nmigrate users from one tenant to another\n. The tenants are part of the Auth0 solution. We want to\nretain user credentials\n, especially passwords, during this migration.\nRequirements:\nMigrate users from\nTenant A to Tenant B\nPreserve login credentials\n(username/email + password)\nRetain\nuser metadata\nsuch as display name, roles, or custom claims\nSupport a\nlarge number of users\n(bulk migration)\nMinimize\nuser impact or need for password reset\nQuestions:\nIs it possible to migrate users between tenants while preserving passwords?\nIf not, what are secure alternatives or workarounds (e.g., temporary login, password reset flows)?\nWhat are the best practices or recommended tools for such migration?\nAny official scripts or APIs?\nAre there any compliance or security concerns I should be aware of?\nEspecially when transferring sensitive data like passwords or tokens.\nEnvironment Details (optional but helpful):\nIdentity Provider:  Auth0\nNumber of users: e.g., 10,000+\nPreferred method: API-based / Scripted\nMigration time window: e.g., maintenance window available",
+    "gold_doc_url": "https://auth0.com/docs/troubleshoot/customer-support/manage-subscriptions/export-data",
+    "gold_doc_id": "auth0-articles-support-removing-auth0-exporting-data-md-2a97a17f20e1",
+    "source_thread_url": "https://community.auth0.com/t/i-want-to-transfer-users-from-one-tenant-to-another-tenant-with-password-and-what-are-the-optimal-ways/188133",
+    "answerable": true
+  },
+  {
+    "id": "q-8e8e30d142e84bd0",
+    "question": "There was a problem with your log in: There is a user with the same email\n\nHey!\nI hope you’re well.\nWe’re currently using Auth0 on our platform, and we’ve run into an issue where users who initially sign up using one identity provider (e.g., Google) encounter errors when later attempting to log in using another method (e.g., email/password) with the same email address.\nThe error message received is:\n*“There was a problem with your log in: There is a user with the same email.\nI understand that Auth0 treats these as separate identities and does not automatically link them by default. However, we would like to streamline the user experience by\nautomatically linking accounts that share the same verified email address\n.\nSpecifically, we would appreciate help with the following:\nConfirming the safest and recommended approach** to automatically link user accounts across different identity providers (e.g., Google and Auth0 database) when the emails match.\nClarifying any risks or best practices\nwe should consider to avoid accidental or malicious account merging.\nGuidance on implementing this solution via\nActions or Rules\n, including how to correctly authenticate the Management API for account linking.\nWhether there are any\nbuilt-in Auth0 configurations or roadmap features\nthat would support this use case more directly in the future.\nOur use case is relatively straightforward: we want users to be able to log in with any previously used method without running into duplicate account errors.\nThank you in advance for your guidance and support. Please let us know if you need any additional information about our tenant or setup.\nBest regards,",
+    "gold_doc_url": "https://auth0.com/docs/manage-users/user-accounts/user-account-linking",
+    "gold_doc_id": "auth0-articles-users-concepts-overview-user-account-linking-md-ae352f567c56",
+    "source_thread_url": "https://community.auth0.com/t/there-was-a-problem-with-your-log-in-there-is-a-user-with-the-same-email/189455",
+    "answerable": true
+  },
+  {
+    "id": "q-b4bdbcba6345c52b",
+    "question": "Invite Organization Members\n\nI am reaching out to ask about an issue I’ve encountered these two days.\nI generate an invitation link in Auth0 with api request. The user receives the link, but in case of clicking the accept button the invitation status remains Pending and the roles don’t assign to the user. Maybe this is because I am using a free plan, please let me know if that’s the issue of the subscription so I save my time and activate the plan imediatelly.",
+    "gold_doc_url": "https://auth0.com/docs/get-started/applications/confidential-and-public-applications/user-consent-and-third-party-applications",
+    "gold_doc_id": "auth0-articles-api-auth-user-consent-md-a04893969fa8",
+    "source_thread_url": "https://community.auth0.com/t/invite-organization-members/132771",
+    "answerable": true
+  },
+  {
+    "id": "q-c2dd82ade7403284",
+    "question": "Seeing `invalid signature: the signature value`...`is incorrect`\n\nWe ran across:\n{\n  \"date\": \"2026-06-11T05:50:14.771Z\",\n  \"type\": \"flo\",\n  \"description\": \"invalid signature: the signature value ...== is incorrect\",\n  \"connection_id\": \"\",\n  \"client_id\": \"...\",\n  \"client_name\": \"...\",\n  \"ip\": \"...\",\n  \"user_agent\": \"Edge 149.0.0 / Windows 10.0.0\",\n  \"details\": {\n    \"allowed_logout_url\": []\n  },\n  \"hostname\": \"...\",\n  \"user_id\": \"\",\n  \"user_name\": \"\",\n  \"location_info\": {\n    ...\n  },\n  \"$event_schema\": {\n    \"version\": \"1.0.0\"\n  },\n  \"environment_name\": \"prod-us-1\",\n  \"log_id\": \"90020260611055014807412000000000000001223372175632636094\",\n  \"tenant_name\": \"...\",\n  \"_id\": \"90020260611055014807412000000000000001223372175632636094\",\n  \"isMobile\": false,\n  \"id\": \"90020260611055014807412000000000000001223372175632636094\"\n}\nThere were a couple of other old posts about invalid signatures, but they didn’t say much. I’m leaving this here mostly so others can see it’s a thing.\nAs this is logout as opposed to login, I don’t think this is an attacker sending random garbage (it’s a real user; and they’re using our frontend which uses\nGitHub - auth0/auth0.js: Auth0 headless browser sdk · GitHub\nto manage things).",
+    "gold_doc_url": "https://auth0.com/docs/deploy-monitor/logs/log-event-type-codes",
+    "gold_doc_id": "auth0-articles-logs-references-log-event-type-codes-md-dcb3d1a80198",
+    "source_thread_url": "https://community.auth0.com/t/seeing-invalid-signature-the-signature-value-is-incorrect/200750",
+    "answerable": true
+  },
+  {
+    "id": "q-13c235945ae3b2da",
+    "question": "Auth0 forcing a new user to change their password on first login, pop a warning on the login screen\n\nHello ! I have a website done in Microsoft PowerPages to which I have Auth0 attached to. I wanted to force users to reset their password on first time login. I have followed the official documentation for this as provided by Auth0 (option 1).  It works, however, I would like the user to be notified in the login experience rather returning to my website with an error about it. Like what I want is user attempts to login for the first time and to stay within the login screen with a small error message underneath the box like “Reset your password first”. Is such a thing possible ?",
+    "gold_doc_url": "https://auth0.com/docs/authenticate/login/auth0-universal-login/universal-login-vs-classic-login/classic-experience",
+    "gold_doc_id": "auth0-articles-universal-login-classic-md-127cbbbf92ab",
+    "source_thread_url": "https://community.auth0.com/t/auth0-forcing-a-new-user-to-change-their-password-on-first-login-pop-a-warning-on-the-login-screen/191902",
+    "answerable": true
+  },
+  {
+    "id": "q-51ccde854746504b",
+    "question": "Invite only signup\n\nI have an inquiry about how I would go about implementing invite only for my application using Auth0? I want to be able to only allow certain users to be able to create accounts by inviting them via email.\nAny help is greatly appreciated",
+    "gold_doc_url": "https://auth0.com/docs/customize/email/send-email-invitations-for-application-signup",
+    "gold_doc_id": "auth0-articles-design-creating-invite-only-applications-md-9c8a9b09591f",
+    "source_thread_url": "https://community.auth0.com/t/invite-only-signup/192557",
+    "answerable": true
+  },
+  {
+    "id": "q-c2503b64e472a660",
+    "question": "Custom Database connection: login / getUser scripts not being invoked\n\nI’m migrating users from an existing Amazon Cognito user pool into Auth0 via a Custom Database connection (using “Import Users to Auth0”). I built a small wrapper API over Cognito that exposes two endpoints—\nlogin\nand\ngetUser\n—and configured these in Auth0 under “Custom Database → Login” and “… → Get User.” Both endpoints pass the “Try” tests in the dashboard.\nHowever, when I try to authenticate against this connection (either via “Try Connection” in the dashboard or through my local application using Universal Login / SDK), Auth0 always returns\n“Wrong email or password”\nand never actually calls my\nlogin\nor\ngetUser\nendpoints. No requests hit my wrapper API.\nWhat I’ve Tried\nVerified both endpoints succeed in “Try and save” tests in the Dashboard.\nConfirmed the connection is enabled for my application.\nDouble-checked the script URLs, HTTP methods (POST), and headers.\nReviewed Auth0 Dashboard logs—no record of invocation for this connection.\nPlease let me know what next steps or diagnostics I can perform to get my custom database scripts invoked properly. Thanks!",
+    "gold_doc_url": "https://auth0.com/docs/authenticate/database-connections/custom-db/create-db-connection",
+    "gold_doc_id": "auth0-articles-connections-database-custom-db-create-db-connection-md-05f595aa2bd4",
+    "source_thread_url": "https://community.auth0.com/t/custom-database-connection-login-getuser-scripts-not-being-invoked/188787",
+    "answerable": true
+  },
+  {
+    "id": "q-b7713cb2ace3414a",
+    "question": "Error: No verifier returned from client\n\nHi there,\nwe are trying to use auth0.js for login. With Chrome it’s not a problem, but Firefox or Chrome incognito mode yields\nNo verifier returned from client\n.\nHere is our simple test setup:\nindex.html:\n<html>\n  <head>\n    <script src=\"https://<TENANT_1>/js/auth0/9.19.0/auth0.min.js\"></script>\n  </head>\n  <body>\n    <script>\n      const auth = new auth0.WebAuth({\n        domain: domain,\n        clientID: clientId,\n        redirectUri: `http://localhost:4200/callback`,\n        audience: audience,\n        scope: 'openid email profile',\n        responseType: 'token id_token'\n      });\n\n      const state = JSON.stringify({\n        redirectUrl: '/'\n      });\n      const nonce = \"random\";\n\n      auth.login({\n          realm: 'Username-Password-Authentication',\n          username: username,\n          password: password,\n          redirectUri: `http://localhost:4200/callback`,\n          state: state,\n          nonce: nonce\n        },\n…\n});\n      const nonce = \"random\";\n\n      auth.parseHash({\n        hash: window.location.hash,\n        nonce: nonce,\n        state: localStorage.getItem('state')\n      }, (err, authResult) => {\n        console.log(err);\n        console.log(authResult);\n      });\n    </script>\n  </body>\n</html>\nauth.parseHash\nreturns the error:\n{\n    \"error\": \"invalid_request\",\n    \"errorDescription\": \"No verifier returned from client.\",\n    \"state\": \"{\\\"redirectUrl\\\":\\\"/\\\"}\"\n}\nWe’ve set up a Cross-Origin Verification Fallback like this:\n<!DOCTYPE html>\n<html>\n\n<head>\n  <script src=\"https://<TENANT_2>/js/auth0/9.0.0/auth0.min.js\"></script>\n  <script type=\"text/javascript\">\n    var auth0Client = new auth0.WebAuth({\n      domain: domain,\n      redirectUri: redirectUri,\n      clientID: clientId,\n      responseType: 'token'\n    });\n    auth0Client.crossOriginVerification();\n  </script>\n</head>\n\n<body></body>\n\n</html>\nAnything we’re doing wrong? It not only happens on\nlocalhost\n, also on staging environment.",
+    "gold_doc_url": "https://auth0.com/docs/libraries/auth0js",
+    "gold_doc_id": "auth0-articles-libraries-auth0js-v9-index-md-bdb99e3e06ed",
+    "source_thread_url": "https://community.auth0.com/t/error-no-verifier-returned-from-client/87727",
+    "answerable": true
+  },
+  {
+    "id": "q-f32903554a3db570",
+    "question": "I customize reset password email template after that password reset link always opens a blank page\n\nI configured custom provider and sent an email to reset password.\nLink always open white blank page.\nimage\n1919×552 36.9 KB\nI did reset my customized email and resent email without using custom email provider. Still I am getting same error.",
+    "gold_doc_url": "https://auth0.com/docs/customize/email/email-templates",
+    "gold_doc_id": "auth0-articles-email-spa-redirect-md-cc8819b91898",
+    "source_thread_url": "https://community.auth0.com/t/i-customize-reset-password-email-template-after-that-password-reset-link-always-opens-a-blank-page/186464",
+    "answerable": true
+  },
+  {
+    "id": "q-02dd6c41e8a8a02f",
+    "question": "Auth0 architecture for B2B multi-tenant SaaS: Source of truth vs DB ownership\n\nHi everyone,\nWe are building a B2B multi-tenant SaaS platform where each customer (organization) has its own workspace with multiple members and roles (owner, admin, editor, viewer). Currently we have ~50 users across 3 organizations, with expected growth.\nWe are evaluating two approaches:\nApproach A: Auth0 as Source of Truth\nAuth0 manages users, roles, and organization membership. PostgreSQL stores only product data. Backend relies on JWT + Management API.\nApproach B: Auth0 for Authentication Only\nAuth0 handles login only. After login, users are stored in PostgreSQL, and all reads (profiles, roles, org membership, permissions) come from DB. No sync with Auth0 after login.\nQuestions:\nWhich approach is commonly used in B2B SaaS?\nWill Auth0 Management API rate limits be an issue in Approach A?\nIs Approach B a recommended pattern in real-world usage?\nAny better hybrid approach?\nWould really appreciate guidance from people who have built similar systems.\nThanks!",
+    "gold_doc_url": "https://auth0.com/docs/troubleshoot/customer-support/manage-subscriptions",
+    "gold_doc_id": "auth0-articles-support-subscription-md-fc194fa2bc1f",
+    "source_thread_url": "https://community.auth0.com/t/auth0-architecture-for-b2b-multi-tenant-saas-source-of-truth-vs-db-ownership/198538",
+    "answerable": true
+  },
+  {
+    "id": "q-8109a42d35a7a49f",
+    "question": "Searchable and indexed Custom attributes\n\nHi ,\nCan we create the custom attributes  which are searchable. Also, can we get these attributes indexed for better performance?",
+    "gold_doc_url": "https://auth0.com/docs/manage-users/user-accounts/metadata",
+    "gold_doc_id": "auth0-articles-microsites-manage-users-define-maintain-custom-user-data-md-8090572a70d5",
+    "source_thread_url": "https://community.auth0.com/t/searchable-and-indexed-custom-attributes/190533",
+    "answerable": true
+  },
+  {
+    "id": "q-e9b492f9d1202baa",
+    "question": "Failed transaction - OpenStreetMap\n\nI’m trying to use OpenStreetMap as an OAuth provider.\nI’ve added the correct callback URl and scope (openid). When I try the connection it flows to OSM, then redirects back to\nhttps://<TENANT_1>\n. Then I get the error:\nFailed transaction\nIf you are seeing this, it means that your connection didn’t work.\nThese are the details:\n{\n  \"error\": \"access_denied\",\n  \"error_description\": \"The authorization server encountered an unexpected condition which prevented it from fulfilling the request.\"\n}\nHas anyone successfully used OpenStreetMap as a custom social provider in Auth0?",
+    "gold_doc_url": "https://auth0.com/docs/authenticate/identity-providers/social-identity-providers/oauth2",
+    "gold_doc_id": "auth0-articles-connections-adding-generic-oauth1-connection-md-0484b39152fd",
+    "source_thread_url": "https://community.auth0.com/t/failed-transaction-openstreetmap/196904",
+    "answerable": true
+  }
+]

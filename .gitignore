@@ -1,0 +1,25 @@
+# Secrets / local env
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+backend/.venv/
+
+# Stage 0 corpus raw fetches (regenerate via evals/scripts).
+# Entire directories ignored (auth0/docs clone contains a nested .git).
+backend/evals/corpus/**/docs/raw/
+backend/evals/corpus/**/forum/raw/
+
+# IDE / OS
+.idea/
+.vscode/
+*.swp
+.DS_Store
+
+# Eval reports (generated)
+backend/evals/reports/

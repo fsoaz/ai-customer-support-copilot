@@ -1,0 +1,162 @@
+[
+  {
+    "id": "q-821695b705ea827a",
+    "question": "Enterprise SAML Connection, IdP Initiated SSO via API\n\nHello Auth0 friends,\nWe have automated basically everything that has to do with setting up a connection and an application, however, I am still having trouble setting the parameters of the IdP Initiated SSO to Accept Requests and fill the necessary parameters via API.\nCan you maybe point me in the right direction? What kind of API do I need to use to set this up. It’s the last piece in my puzzle, I appreciate your help.",
+    "gold_doc_url": "https://auth0.com/docs/authenticate/protocols/saml/saml-sso-integrations/identity-provider-initiated-single-sign-on",
+    "gold_doc_id": "auth0-articles-protocols-saml-idp-initiated-sso-md-ae43619f953b",
+    "source_thread_url": "https://community.auth0.com/t/enterprise-saml-connection-idp-initiated-sso-via-api/100455",
+    "answerable": true
+  },
+  {
+    "id": "q-fe97e51d2858af36",
+    "question": "Add org_id to access token returned from Resource Owner Password Flow\n\nHello, I’m using the Resource Owner Password Flow to obtain an access token which I then use to access my API in e2e tests with Cypress. The issue is that the access token I get back does not contain an org_id since the Resource Owner Password Flow is not supported in the context of Organizations - however, our API requires the access token to contain an org_id, otherwise, the user  will not be allowed to access any endpoints. Is there a way to add an\norg_id\nto the access token returned from the Resource Owner Password Flow?\nI understand that I can utilize the Authorization Code Flow which utilizes the\n/authorize\nendpoint in order to add an org_id to the access token. However, this flow does not allow me to authenticate through a specific user. In this case, I need to receive an access token for a test user that I’m using in the e2e tests but I also need the token to contain an org_id as well.\nAny help/advice is greatly appreciated!",
+    "gold_doc_url": "https://auth0.com/docs/get-started/authentication-and-authorization-flow/resource-owner-password-flow",
+    "gold_doc_id": "auth0-articles-api-auth-grant-password-md-69338989ba08",
+    "source_thread_url": "https://community.auth0.com/t/add-org-id-to-access-token-returned-from-resource-owner-password-flow/102885",
+    "answerable": true
+  },
+  {
+    "id": "q-f21b119cd8d2a661",
+    "question": "SAML connection options cert vs signingCert\n\nHello, We are trying to create SAML Connection through\nAuth0 Management API Create Connection Call\nQ1- What is the use of signingCert option while creating SAML connection?\nThis seems a required field. We are getting an error: Bad Request/ 400, ‘The signing Certificate public key is required.’\nAlso, referred to\nthis community post\n, signingCert option is left empty?\nQ2- How to derive value for ‘signingCert’ ?",
+    "gold_doc_url": "https://auth0.com/docs/authenticate/protocols/saml/saml-sso-integrations/sign-and-encrypt-saml-requests",
+    "gold_doc_id": "auth0-articles-protocols-saml-saml-configuration-special-configuration-scenarios-signi-727169d1a9f5",
+    "source_thread_url": "https://community.auth0.com/t/saml-connection-options-cert-vs-signingcert/108105",
+    "answerable": true
+  },
+  {
+    "id": "q-6ce4415193dad5b6",
+    "question": "Force user to enroll a new MFA Authenticator using Universal Login\n\nIs there a way to redirect the User to a universal login page where he is forced to enroll a new MFA factor?\nWe have an SPA using React and would like to allow the user to change his/her phone number used for MFA. The approach we wanted to take is the following because it doesn’t require us to build our own UI:\nOn the frontend, list and remove the MFA then force the user to sign in again, this will force them to enter a new phone number for MFA\nHowever this leaves the user without MFA for a short period of time which is a security issue. This is why we would like to know if there is an way to force the user to enroll a new authenticator without deleting the old first using universal login.",
+    "gold_doc_url": "https://auth0.com/docs/customize/actions/explore-triggers/signup-and-login-triggers/login-trigger",
+    "gold_doc_id": "auth0-url-customize-actions-explore-triggers-signup-and-login-triggers-login-trigger-2a9754ef339b",
+    "source_thread_url": "https://community.auth0.com/t/force-user-to-enroll-a-new-mfa-authenticator-using-universal-login/109237",
+    "answerable": true
+  },
+  {
+    "id": "q-e5e5e209981cbfe3",
+    "question": "IP range for tenant domain\n\nHello there,\nOur hosting service requires a static IP address or a range of IP to allow the traffic to and from auth0 on our servers.\nI understood that we need a custom domain with self-managed certificates to have the static IP address but another idea was to see if the domain address (\nxxxx.eu.auth0.com\n) has a range of IP or is completely dynamic.\nSorry about the tags, I didn’t find better ones.\nRegards",
+    "gold_doc_url": "https://auth0.com/docs/secure/security-guidance/data-security/allowlist",
+    "gold_doc_id": "auth0-articles-guides-ip-whitelist-md-5ad415547bc0",
+    "source_thread_url": "https://community.auth0.com/t/ip-range-for-tenant-domain/110168",
+    "answerable": true
+  },
+  {
+    "id": "q-a9fc718d68435a75",
+    "question": "Custom Action - Typings file or definitions for params\n\nI am writing a custom post login action and the inline editor provides code completion for the “event” and “api” params. I would like to be able to develop the action in my own IDE. Are there typings files for those parameters that I could point my IDE to in order to have that code completion in my IDE for those classes?\nimage\n1771×1201 197 KB",
+    "gold_doc_url": "https://auth0.com/docs/customize/actions/explore-triggers/signup-and-login-triggers/login-trigger/post-login-event-object",
+    "gold_doc_id": "auth0-url-customize-actions-explore-triggers-signup-and-login-triggers-login-trigger-post-987b6a5b4017",
+    "source_thread_url": "https://community.auth0.com/t/custom-action-typings-file-or-definitions-for-params/126774",
+    "answerable": true
+  },
+  {
+    "id": "q-60a78ce976874d6b",
+    "question": "Disabling signup works on the preview with auth0 but doesn't when embedded into my app\n\nI see another post here\nBug: Disable Sign Ups switch does not disable sign ups in Login page\n.\nBasically, I have disabled and reenabled and disabled the sign up all toggle in the database connections. I can see it be removed but with in the preview. But when i bring up my react native auth flow up it still show\nhere it is in the app\nimage\n1284×1713 185 KB\nhere it is in the preview\nimage\n1808×1704 102 KB\nI only have 1 database and it is tied to the correct application. the auth flow works normally.",
+    "gold_doc_url": "https://auth0.com/docs/libraries/lock/lock-configuration",
+    "gold_doc_id": "auth0-articles-libraries-lock-v11-configuration-md-d75b5c9d666e",
+    "source_thread_url": "https://community.auth0.com/t/disabling-signup-works-on-the-preview-with-auth0-but-doesnt-when-embedded-into-my-app/133527",
+    "answerable": true
+  },
+  {
+    "id": "q-808e41d5b69e93cf",
+    "question": "Passwordless email and multiple domains\n\nCurrently, I have a single page application that talks to our backend REST API.  We are using the passwordless login option and we have a custom domain to prevent popup blockers from blocking the auth0 popup.  The problem I have is that I have another domain that I need to talk to our backend server and also need to use the passwordless login option.  How can I enable the second custom domain to talk to the same resource backend and not trigger popup blockers.  As far as I understand you can only have one custom domain per tenant.  Any help would be greatly appreciated.  Thanks!",
+    "gold_doc_url": "https://auth0.com/docs/customize/custom-domains/multiple-custom-domains",
+    "gold_doc_id": "auth0-url-customize-custom-domains-multiple-custom-domains-a97420c3d78e",
+    "source_thread_url": "https://community.auth0.com/t/passwordless-email-and-multiple-domains/140909",
+    "answerable": true
+  },
+  {
+    "id": "q-c74a61b1fbf27dbc",
+    "question": "Node 22 upgrade results in \"unexpected end of file\"\n\nUpgrading to node 22, or 18, results login scripts failing with “unexpected end of file”.\nBased on this problem solution I need node 1.2.3, however that is not available in the node 22 runtimes.\nWhat do you suggest?\nStated problem solution:\nAfter Upgrading the Action Runtime to Node18, Getting Error \"unexpected end of file\" on Login\nVersion included in runtime.\nCan I require? - Search which node modules you can use in webtask.io",
+    "gold_doc_url": "https://auth0.com/docs/customize/actions/write-your-first-action",
+    "gold_doc_id": "auth0-url-customize-actions-write-your-first-action-a8f080dfb908",
+    "source_thread_url": "https://community.auth0.com/t/node-22-upgrade-results-in-unexpected-end-of-file/187391",
+    "answerable": true
+  },
+  {
+    "id": "q-87317868b5d6146a",
+    "question": "How to trigger password reset on first login for users created by admin?\n\nHi,\nI’m new to Auth0 and I need help implementing the following flow for a client project:\nAn admin user should be able to create accounts for subordinate users. Once created, each user should receive an email inviting them to log into the site using Auth0. On their first login, users should be prompted to reset their password. After successfully resetting the password, they should be redirected back to the login screen to proceed with authentication.\nSome key requirements:\nThe flow should open as few browser windows or tabs as possible to keep the experience simple and clean.\nThe login process should be easy to explain to end users (who may not be tech-savvy).\nThe admin users creating the accounts are also not technical, so the process for creating new users should be as straightforward as possible.\nIs this flow — especially the force password reset on first login — possible with Auth0?\nIf yes, what is the recommended way to implement it?\nThanks in advance for your help!",
+    "gold_doc_url": "https://auth0.com/docs/customize/actions",
+    "gold_doc_id": "auth0-url-customize-actions-7f137ab5fb30",
+    "source_thread_url": "https://community.auth0.com/t/how-to-trigger-password-reset-on-first-login-for-users-created-by-admin/187416",
+    "answerable": true
+  },
+  {
+    "id": "q-df6d45633687664f",
+    "question": "Multiple allowed web origins\n\nHello community,\nI’m having an issue with redirection behavior based on my Auth0 application settings.\nIn my Auth0 app configuration, I have\ntwo entries\nin the\nAllowed Web Origins\n: one for\nmy production environment\nand another for\nlocalhost\n(for development).\nHowever, when I open the app in\nlocalhost\n, it automatically redirects me to the\nproduction domain\n.\nIf I change the order of the\nAllowed Web Origins\n(putting localhost first), then opening the app in\nproduction\nredirects me to\nlocalhost\ninstead.\nIt’s as if the app is always redirecting to the\nfirst origin in the list\n, regardless of which domain I’m actually accessing.\nIs this expected behavior? Shouldn’t the redirect URI depend on the actual environment the app is running in?\nThanks in advance for any insights!",
+    "gold_doc_url": "https://auth0.com/docs/authenticate/login/redirect-users-after-login",
+    "gold_doc_id": "auth0-articles-protocols-oauth2-redirect-users-md-e21ba7b9a0ef",
+    "source_thread_url": "https://community.auth0.com/t/multiple-allowed-web-origins/187555",
+    "answerable": true
+  },
+  {
+    "id": "q-d7f91dc405b823b4",
+    "question": "How can I persist authentication across different applications and domains in a micro-frontend architecture?\n\nIs there a way to persist authentication between different applications that are hosted on different domains and may also be embedded within another website?\nFor example, suppose I have the following domains (all using the same Auth0 tenant):\nhttps://will-be-embedded.com\n(can be accessed directly or embedded into other websites)\nhttps://host1.com\nhttps://another-host2.com\nI would like a user to log in on one of these sites and automatically be logged in on the others as well. For instance, if a user logs in on\nwill-be-embedded.com\n, they should also be authenticated when they visit\nhost1.com\nor\nanother-host2.com\n.\nI am particularly interested in persisting authentication in a micro-frontend architecture, where one website is embedded within another. For example, if a user is on\nhost1.com\nand logs in through\nwill-be-embedded.com\n(which is embedded within\nhost1.com\n), they should be authenticated across the entire website, not just within the embedded component. Currently, I am experiencing issues with this scenario.\nOn my dummy test websites based on\nthis Auth0 React sample\n, it seems to work. However, when I try to implement it with real websites, it does not work as expected.\nDoes anyone have any ideas or recommendations on how to implement this kind of functionality?",
+    "gold_doc_url": "https://auth0.com/docs/authenticate/login/configure-silent-authentication",
+    "gold_doc_id": "auth0-articles-api-auth-tutorials-silent-authentication-md-ee038410b386",
+    "source_thread_url": "https://community.auth0.com/t/how-can-i-persist-authentication-across-different-applications-and-domains-in-a-micro-frontend-architecture/187694",
+    "answerable": true
+  },
+  {
+    "id": "q-50652db82c516806",
+    "question": "ACUL documentation does not line up with linked GitHub repository\n\nI am attempting to evaluate ACUL for our use cases, but\nThe Auth0 ACUL JS SDK Quickstart article mentions an auth0-acul-react-boilerplate folder that doesn’t exist.\nThe start of the App.tsx file iin the Quickstart does not look the same as it does in GitHub.\nThe GitHub documentation contradicts the Quickstart article.\nAs a result, I am confused on how to leverage the documentation to start testing with ACUL.",
+    "gold_doc_url": "https://auth0.com/docs/customize/login-pages/advanced-customizations/getting-started/sdk-quickstart",
+    "gold_doc_id": "auth0-url-customize-login-pages-advanced-customizations-getting-started-sdk-quickstart-48a6c563dbdd",
+    "source_thread_url": "https://community.auth0.com/t/acul-documentation-does-not-line-up-with-linked-github-repository/187867",
+    "answerable": true
+  },
+  {
+    "id": "q-3ad8b0739ae67735",
+    "question": "Playwright testing with Authorization Code Flow\n\nOur team is experiencing some problems with integration testing of our React application in Playwright.\nIn our app, user authentication is performed though auth0, using the Auth0Provider component from the auth0-react package. It uses the Authorization Code Flow, which means that the generated access token is not exposed on the client side. Authentication API calls return short-lived refresh tokens instead.\nDuring testing with playwright, the auth0 API gets called again and again, to see whether the user is still logged in or not. To avoid Too Many request errors from the Aut0 API when running our tests, we would like our integration tests to not have to make all of these calls. A single authentication call is OK of course.\nMocking the calls is the first thing we tried, but we haven’t yet succeeded. We get no errors to refer to, it simply does not work.\nWe also tried storing the refresh token locally, but the expiry time is too short, so that the calls are still made regularly. We tried setting a longer expiry time in the Auth0 console, but somehow this does not seem to have any effect.\nDoes anyone here have an idea how to avoid all of these calls during testing?",
+    "gold_doc_url": "https://auth0.com/docs/secure/tokens/access-tokens/update-access-token-lifetime",
+    "gold_doc_id": "auth0-articles-dashboard-guides-apis-update-token-lifetime-md-5c9c845416ff",
+    "source_thread_url": "https://community.auth0.com/t/playwright-testing-with-authorization-code-flow/187895",
+    "answerable": true
+  },
+  {
+    "id": "q-857ccffa32d7deba",
+    "question": "Invalid_grant (Unknown or invalid refresh token)\" Error When Using Refresh Tokens in Next.js App\n\nProblem Summary\nI’m integrating Auth0 into a Next.js application (using [\n@auth0/nextjs-auth0\n] and occasionally encounter the following error when attempting to refresh the access token:\npgsql\nCopyEdit\nError: The request to refresh the access token failed. CAUSE: invalid_grant (Unknown or invalid refresh token.)\nThis prevents my application from obtaining a new access token and results in users being logged out or forced to log in again.\nEnvironment\nFramework:\nNext.js (app directory, server-side functions)\nAuth0 SDK:\n@auth0\n/nextjs-auth0 (\nedge\nor\nnodejs\nruntime) [\nSpecify which you’re using\n]\nAuth0 Application Type:\n[Single Page Application / Regular Web Application]\nRefresh Token Rotation:\nEnabled\n“Allow Offline Access”:\nEnabled in Application and API\nScopes Requested:\nopenid profile email offline_access\nAudience:\n[your audience here]\nHosting Provider:\n[Vercel/AWS/Other]\nSteps to Reproduce\nUser logs in through Auth0 login page.\nApplication requests tokens with\noffline_access\nscope.\nAfter a period of time (once the access token expires), the app/server attempts to use the refresh token to get a new access token (via\ngetAccessToken\n).\nThe error appears:\npgsql\nCopyEdit\nError: The request to refresh the access token failed. CAUSE: invalid_grant (Unknown or invalid refresh token.)\nWhat I’ve Checked\nConfirmed that “Allow Offline Access” is enabled in both the Application and API.\nConfirmed that refresh token rotation is enabled.\nConfirmed that my login request includes the\noffline_access\nscope.\nObserved that the refresh token is present in the session after login, but becomes invalid after some time or on token refresh.\nUsing\ngetAccessToken()\nto obtain the access token on the server.\n[If relevant:] I am using the Edge runtime for some API routes.\n(Note: I’ve learned that session updates might not work properly in Edge runtime, which could be related.)\nQuestions & Help Need…",
+    "gold_doc_url": "https://auth0.com/docs/secure/tokens/refresh-tokens/configure-refresh-token-expiration",
+    "gold_doc_id": "auth0-url-secure-tokens-refresh-tokens-configure-refresh-token-expiration-c97baba325bc",
+    "source_thread_url": "https://community.auth0.com/t/invalid-grant-unknown-or-invalid-refresh-token-error-when-using-refresh-tokens-in-next-js-app/188065",
+    "answerable": true
+  },
+  {
+    "id": "q-530cfaf38138b5b0",
+    "question": "No 3rd party refresh_token available with AzureAd connection\n\nWe are looking at allowing customers to access their Microsoft calendar from our .NET application using an initial login to Azure AD via an Auth0 enterprise connection.\nWe have created a POC where the user authenticates with a regular Auth0 web application, and we then query the Management API to obtain the\naccess_token\nfrom the\nidentities\narray on the user. Using this we have been able to query their calendar details successfully.\nNow for a smoother user experience, we need to get hold of the\nrefresh_token\nthat AzureAD should also generate at login. But this is not set in the Auth0 user identities, or otherwise accessible. We have tried a number of things as suggested\nhere\n,\nhere\nand elsewhere but with no success.\nFrom what I have read, it seems this did not used to be possible to obtain using enterprise connections, but now is. Is this correct, and have I missed any other config? If not, is there a good alternative?\nHere is our setup and some things we have tried:\nAzure app registration\nAPI permissions set for email, openid, profile, offllne_access (plus others) and admin consent is granted for all\nAuthentication is set up to issue both ID tokens and Access tokens\nAuth0\nApplication has these grant types ticked: Implicit, Authorization code, Refresh token, Client credentials. (Note that\noffline-access\nis not an available option)\nAzureAD connection uses Microsoft Identity Platform (v2). Basic profile and Extended profile are ticked. We have not ticked other options such as Get user groups.\n.NET client (using\nAuth0.NET\npackage)\nStandard OIDC scopes are set, in addition to “offlne_access”\nClient Secret is set in Auth0 options\nRefresh tokens requested using\nauth0Builder.WithAccessToken(o => o.UseRefreshTokens = true);\nThanks!",
+    "gold_doc_url": "https://auth0.com/docs/secure/tokens/token-vault",
+    "gold_doc_id": "auth0-url-secure-tokens-token-vault-323c6085d354",
+    "source_thread_url": "https://community.auth0.com/t/no-3rd-party-refresh-token-available-with-azuread-connection/188151",
+    "answerable": true
+  },
+  {
+    "id": "q-c6bad2c9f715e977",
+    "question": "Set an expiration for Signup URL\n\nI generate a URL for a page where users can directly sign up by adding the\nprompt=login&screen_hint=signup\nparameter to the\n/authorize\nendpoint URL.\nreference\nCan I set an expiration date for this URL?\nI need to prevent users from signing up with an expired URL.\nThat’s an important restriction from a security perspective.",
+    "gold_doc_url": "https://auth0.com/docs/customize/email/send-email-invitations-for-application-signup",
+    "gold_doc_id": "auth0-articles-design-creating-invite-only-applications-md-9c8a9b09591f",
+    "source_thread_url": "https://community.auth0.com/t/set-an-expiration-for-signup-url/188325",
+    "answerable": true
+  },
+  {
+    "id": "q-b704bf676f347ecf",
+    "question": "Android redirect after login issue\n\nDescription\nso i followed the documentation :\nios work fine\non android i setup teh https scheme as said and added my app and bundle and sha256 to activate app links , my issue is taht the form open , i tap the user it go and do not open the app , and when i open teh app the user is connected but it’s not the tapped user the mail is empty and token is wrong.\ntried with custom cheme it show me an an app to choose 2 app the same app and do not show the form just an error not found.\nthx the documantation in the website is for version 1.6.0 the last version is 1.11.0. tried to dwongrade to 1.8.0 same issue.\ncredentials =\nawait auth0.webAuthentication().login(\nuseHTTPS: true,\naudience: dotenv.env[‘AUTH0_AUDIENCE’]\nscopes: {\n‘openid’,\n‘profile’,\n‘email’,\n‘offline_access’,\n},\nparameters: {\n‘scope’:\n‘openid profile email offline_access’,\n},\n)",
+    "gold_doc_url": "https://auth0.com/docs/get-started/applications/enable-android-app-links-support",
+    "gold_doc_id": "auth0-articles-dashboard-guides-applications-enable-android-app-links-md-43e3ea83278d",
+    "source_thread_url": "https://community.auth0.com/t/android-redirect-after-login-issue/188419",
+    "answerable": true
+  },
+  {
+    "id": "q-8ddf5e259423a598",
+    "question": "Auth0 Okta Integration\n\nHi\nWe have a pretty large set of users that currently log in using Username-Password authentication.\nWe recently added an Okta Workforce connection and a lot of the existing users also exist, with the same email, in Okta Workforce.\nIs it possible to link the Auth0 account to the Okta Workforce account?\nI have enabled and tried using the Auth0 Account Link extension but I don’t see any extra dialog that occurs during sign in on our SPA.\nAdditionally, I have enabled the Okta Workforce connection for the SPA but I cannot log in using Okta Workforce credentials - only the existing Auth0 Username-Password will work.",
+    "gold_doc_url": "https://auth0.com/docs/manage-users/user-accounts/user-account-linking/link-user-accounts",
+    "gold_doc_id": "auth0-articles-users-guides-link-user-accounts-md-80dcd36b812c",
+    "source_thread_url": "https://community.auth0.com/t/auth0-okta-integration/188427",
+    "answerable": true
+  },
+  {
+    "id": "q-44dac53fc7f684b6",
+    "question": "Support \"email with sso\" in my Profile Identifier First flow\n\nWe’re using WorkOS to manage our SSO connections, and Auth0 handles everything else. Currently, we support Google, GitHub, and email/password authentication.\nWe want SSO users to log in through a separate button and input field, distinct from the standard email/password login. The question is: to achieve this separation, do we need to implement a custom embedded UI, or can Auth0 Lock support this kind of UI differentiation (RHD)?\nOur WorkOS setup has been in place for a while and works flawlessly, so we’re confident in that part. What we want now is to move away from a shared input for both “email/password and SSO email” to a clearer split between “email/password input” and “SSO email input”.",
+    "gold_doc_url": "https://auth0.com/docs/customize/login-pages/universal-login/customize-signup-and-login-prompts",
+    "gold_doc_id": "auth0-url-customize-login-pages-universal-login-customize-signup-and-login-prompts-861b6c2f98e4",
+    "source_thread_url": "https://community.auth0.com/t/support-email-with-sso-in-my-profile-identifier-first-flow/188429",
+    "answerable": true
+  }
+]

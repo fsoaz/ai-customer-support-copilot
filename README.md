@@ -8,9 +8,8 @@ Multi-tenant SaaS. Built solo.
 
 ## Status
 
-**Pre-implementation.** Planning is complete and documented; no application code exists yet.
-
-Current work: Stage 0 — proving retrieval quality offline before any product code is written. See
+**Stage 0 in progress.** Planning is documented. Task 0.1 (Auth0 proxy corpus + retrieval golden
+set) is complete; product API/UI code is still intentionally absent. See
 [docs/execution/current_task.md](docs/execution/current_task.md).
 
 ## V1 scope
@@ -49,6 +48,7 @@ docs/
   context/     product.md · architecture.md · roadmap.md
   standards/   conventions.md · api_rules.md · testing.md · ai_agent_rules.md
   execution/   current_task.md · work_log.md · review_notes.md · test_evidence.md
+               qa_report_stage0.md
 ```
 
 Reading order for anyone working on this repo: [product.md](docs/context/product.md) →

@@ -8,63 +8,38 @@
 > One active task at a time. Rewritten as work advances; history goes to [work_log.md](work_log.md).
 
 **Stage:** 0 — Prove retrieval ([../context/roadmap.md](../context/roadmap.md))
-**Task:** 0.1 — Select the proxy-corpus product and build the (question → gold doc) extractor
+**Task:** 0.2 — Ingest Auth0 docs into a local chunk/embed store for hybrid retrieval experiments
 **Started:** 2026-07-30
 **Status:** not started
 
-## Why this first
+## Prior task closed
 
-We have no tickets and no knowledge base. Stage 0 must answer one question — *can hybrid retrieval
-find the right document for a real support question?* — and it cannot be answered without ground
-truth.
+**0.1 — Auth0 proxy corpus + golden set** — done 2026-07-30. See [work_log.md](work_log.md).
 
-Synthetic questions graded against synthetic answers produce self-fulfilling evals: generator and
-grader share the same blind spots, the numbers look excellent, and they predict nothing. So the
-first task is acquiring real ground truth cheaply.
+### 0.1 Definition of done (closed)
 
-The strategy: pick a public product whose community forum answers link back to its documentation.
-That link is free, genuine retrieval ground truth.
+- [x] Product selected (Auth0; Elastic rejected on ToS/licence) — evidenced in work_log
+- [x] Documentation fetched (GitHub MIT clone) separated from parse (`fetch_docs.py` / `parse_docs_manifest.py`)
+- [x] Forum threads harvested (`fetch_forum.py` → `corpus/auth0/forum/raw/`)
+- [x] `backend/evals/datasets/retrieval_golden.jsonl` — **382 answerable** (+ 35 unanswerable)
+- [x] ≥30 unanswerable included
+- [x] 20 pairs spot-checked — 18/20 pass ([../../backend/evals/datasets/spot_check.md](../../backend/evals/datasets/spot_check.md))
+- [x] Licence/ToS check recorded ([../../backend/evals/corpus/auth0/licence_notes.md](../../backend/evals/corpus/auth0/licence_notes.md))
 
-## Definition of done
+## Why 0.2 next
 
-- [ ] Product selected, with the selection criteria below evidenced in a short note appended to
-      [work_log.md](work_log.md)
-- [ ] Documentation crawled and stored as raw source (fetch separated from parsing, so parsing can
-      be re-run without re-crawling)
-- [ ] Forum threads harvested where an accepted answer links to a documentation page
-- [ ] `backend/evals/datasets/retrieval_golden.jsonl` written, **300–500 pairs**, schema:
-      ```json
-      {"id": "...", "question": "...", "gold_doc_url": "...", "gold_doc_id": "...",
-       "source_thread_url": "...", "answerable": true}
-      ```
-- [ ] **At least 30 deliberately unanswerable questions** included with `"answerable": false` —
-      questions the docs genuinely do not cover. Without these, the refusal path is untestable and
-      the system will learn to always answer
-- [ ] 20 pairs manually spot-checked: is the linked page really the answer, or incidental?
-- [ ] Corpus licence and terms-of-use check recorded
+The golden set labels (question → gold doc). Stage 0 still needs chunking, embeddings, hybrid
+retrieval, and metric runners before the recall@10 / MRR gate can be measured.
 
-## Selection criteria for the product
+## Definition of done (0.2 — draft)
 
-- Public documentation, hundreds of pages — small doc sets make retrieval trivially easy and the
-  eval meaningless
-- Public forum with an accepted-answer mechanism (Discourse, Stack Exchange tag, GitHub Discussions)
-- Questions resembling **support tickets**, not programming puzzles
-- Terms of use permitting the crawl
-- A domain dense with error codes, identifiers, and version strings — that is what makes hybrid
-  retrieval worth proving
-
-## Not in this task
-
-Chunking, embedding, retrieval implementation, and the metric runners are tasks 0.2–0.4. This task
-produces the dataset only.
+- [ ] Chunk Auth0 docs (~512 tokens, ~15% overlap) from the fetched corpus
+- [ ] Embed chunks; store locally for Stage 0 (Postgres+pgvector or equivalent harness DB)
+- [ ] Cover both MIT GitHub articles and, where feasible, gold URLs that only exist on
+      auth0.com/docs (synthetic `auth0-url-*` ids in the golden set)
+- [ ] Smoke: retrieve for a handful of golden questions returns the gold doc in top-50 before rerank
 
 ## Blocking gate ahead
 
-Stage 0 does not close until `recall@10 ≥ 0.85` and `MRR ≥ 0.60` on this golden set. No product
+Stage 0 does not close until `recall@10 ≥ 0.85` and `MRR ≥ 0.60` on the golden set. No product
 code, schema, UI, or integration work starts before it clears.
-
-## Parallel track — not blocked by this
-
-**Design-partner search is on the critical path and starts now**, week 1, not week 10. Stage 2's
-gate cannot be measured without a live support team, and the proxy corpus does not substitute for
-one real organisation's tickets and KB. See [../context/roadmap.md](../context/roadmap.md).

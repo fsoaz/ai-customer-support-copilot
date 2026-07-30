@@ -23,6 +23,31 @@ direction changes. Do not write one for routine implementation that the diff exp
 
 ---
 
+## 2026-07-30 — Stage 0 — Auth0 proxy corpus selected; golden set built (task 0.1)
+
+**Changed:** Implemented Stage 0 task 0.1. Scaffolded `backend/` with uv. Fetched Auth0 docs from
+GitHub (MIT) at commit recorded in `evals/corpus/auth0/docs/fetch_meta.json`, built
+`manifest.json` via redirects. Harvested solved topics from `community.auth0.com` (Discourse JSON,
+robots-safe). Wrote `evals/datasets/retrieval_golden.jsonl` (**382** answerable + **35**
+unanswerable). Spot-check 18/20 pass. Licence notes in `evals/corpus/auth0/licence_notes.md`.
+
+**Why Auth0 (not Elastic):** Elastic.co Terms of Use forbid scrapers; `elastic/docs-content` is
+CC BY-NC-ND 4.0 — fails "terms permitting the crawl" for a commercial SaaS eval corpus. Auth0 docs
+are MIT on GitHub; forum exposes `has_accepted_answer` and frequently cites `auth0.com/docs/...`.
+Domain is dense with OAuth/OIDC error codes and identifiers.
+
+**Why not HTML-scrape auth0.com:** Docs content comes from the MIT GitHub mirror. Forum harvest uses
+public Discourse `.json` only. Some golden URLs are newer than the GitHub tree; those rows use
+synthetic `auth0-url-*` gold ids so Stage 0.1 is not blocked — Stage 0.2 must still obtain content
+for those URLs.
+
+**Unblocks:** Task 0.2 — chunk/embed/ingest and hybrid retrieval experiments against this golden set.
+
+**Open:**
+- Synthetic gold ids (`auth0-url-*`) lack local article bodies until 0.2 fetches or maps them.
+- Design partner still unidentified (parallel critical path).
+- ~10% label noise in spot-check (incidental docs links in accepted answers).
+
 ## 2026-07-30 — Stage 0 — Project planning; scope and stack locked
 
 **Changed:** Populated the entire `docs/` scaffold — `context/` (product, architecture, roadmap),

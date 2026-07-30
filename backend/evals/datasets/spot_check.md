@@ -36,7 +36,7 @@ candidates reviewed. **Not** a deterministic head of a diversified list (BUG-006
 
 - **16 / 20 pass** (80%) on a seeded random sample
 - **4 fails** — first-link-in-accepted-answer noise (BUG-014; deferred through 0.2)
-- Population: **357** mirror-backed answerable, **0** synthetic, **31** hand unanswerable
+- Population: **359** mirror-backed answerable, **0** synthetic, **31** hand unanswerable
   (25 near-miss + 6 absurdist)
 
 Sample JSON: `evals/datasets/spot_check_sample.json`

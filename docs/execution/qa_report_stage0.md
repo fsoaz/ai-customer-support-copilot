@@ -13,6 +13,10 @@
 `retrieval_golden.jsonl`, `manifest.json`, `redirects_flat.json`, `index.jsonl`, and the raw
 corpus tree. Every number below was measured, not estimated.
 
+**Status: remediated and re-verified 2026-07-30 — see [§8](#8-remediation-verification--2026-07-30).**
+Sections 1–7 are preserved as written at audit time and are **no longer current**. They record what
+was found, so the corrections stay distinguishable from accidents later. Read §8 for present state.
+
 ---
 
 ## 1. Executive summary
@@ -441,3 +445,78 @@ real failure and a false one.
 4. **BUG-005, BUG-007, BUG-008** — reproducibility and the node-execution path, before the corpus
    is refetched.
 5. Everything else can follow 0.2.
+
+---
+
+## 8. Remediation verification — 2026-07-30
+
+**Verdict: gateable.** Every claim below was re-measured against the working tree at `55fd631`, not
+accepted from the remediation summary.
+
+**Commits:** `14306a8` (Stage 0.1 artefacts, BUG-004) → `3a68209` (drop nested docs clone
+submodule) → `55fd631` (full remediation). Working tree clean.
+
+**Locked decision:** drop synthetic gold labels and reharvest from the MIT mirror. No auth0.com
+scrape. This is the (b) branch of BUG-001's recommendation, and it is what the numbers below
+reflect.
+
+### Headline, re-measured
+
+| Claim | Measured | Result |
+|---|---|---|
+| 359 answerable, 0 synthetic | 359 / 0 | ✅ |
+| 100% in MIT manifest | 359 of 359 resolve; 0 orphan | ✅ |
+| 31 unanswerable, 25 near-miss + 6 absurdist | `negative_slice` counter exact | ✅ |
+| Spot-check seeded, 16/20 | `seed=20260730`, `rng_shuffle_all_answerable` | ✅ |
+| Pytest 7 passed | `7 passed in 0.06s` | ✅ |
+
+### Issue disposition — 18 of 18 closed or deliberately deferred
+
+| ID | Status | Evidence |
+|---|---|---|
+| BUG-001 | fixed | 0 synthetic (was 162 / 42.4%); `coverage_report.json` records `coverage_pct: 100.0` |
+| BUG-002 | fixed | 0 forum-derived negatives; all 31 unanswerable are hand-authored |
+| BUG-003 | fixed | 25 near-miss added, absurdist cut 32 → 6; `negative_slice` field makes the slices separable |
+| BUG-004 | fixed | `backend/` tracked at `14306a8`; 26 files under version control |
+| BUG-005 | fixed | `RAW_README.md` in both raw dirs, `forum/sample/` committed, `expected_commit.txt` pins the clone |
+| BUG-006 | fixed | Seeded RNG over all answerable rows; method and seed recorded in `spot_check.md` |
+| BUG-007 | fixed | `node -e` now opt-in behind `--dump-redirects`; default reads the committed `redirects_flat.json` |
+| BUG-008 | fixed | `expected_commit.txt` = `5258d17e`, enforced by `fetch_docs.py` rather than recorded after the fact |
+| BUG-009 | fixed | 0 email addresses in questions (was 7); `test_redact_question_emails_and_tenants` guards it |
+| BUG-010 | fixed | `harvest_failures.jsonl` ledger; `Retry-After` honoured in a loop; category breaks recorded |
+| BUG-011 | fixed | `rebuild_index()` writes from `raw/`; index 1842 = raw 1842 (was 1232 vs 1304) |
+| BUG-012 | fixed | `backend/tests/test_eval_helpers.py`, 7 tests over the four label-shaping helpers |
+| BUG-013 | fixed | 0 truncated questions (was 26); `test_truncate_keeps_head_and_tail` guards it |
+| BUG-014 | deferred | Deliberate, documented in `spot_check.md`. Revisit before the gate call — see risk 1 below |
+| BUG-015 | fixed | Dead no-op block removed |
+| BUG-016 | deferred | Correct call — runs once |
+| BUG-017 | fixed | `raise ValueError` replaces the bare `assert` |
+| BUG-018 | fixed | `RAW_README.md` supersedes the `.gitkeep` approach in both raw dirs |
+
+Also shipped, against §5 of this report: `coverage_report.json` — the artefact that would have
+caught BUG-001 at build time.
+
+### Three things to record before the gate runs
+
+1. **Label noise is now honestly 20%, and it eats the gate's headroom.** 4 of 20 fail on an
+   unbiased sample, against the old biased 90%. This is not a regression — it is the true rate
+   surfacing, which is the entire point of fixing BUG-006. Consequence: with a 0.85 gate and ~20%
+   label noise, any recall@10 landing roughly between 0.70 and 0.85 is **undecidable** without
+   re-reviewing the misses. Decide the adjudication rule now, while it is still neutral. Deciding
+   it after seeing 0.79 is exactly how a gate gets waived.
+2. **Gold-document concentration rose.** 222 unique gold docs → **162**, across 359 pairs — 2.2
+   pairs per document, max reuse 12 (was 9). Unavoidable under the locked decision, since dropping
+   synthetics removed the long tail. Consequence: recall@10 is scored over 162 targets out of 1841
+   corpus documents, and a retriever that happens to nail `user-account-linking` (12),
+   `create-namespaced-custom-claims` (11), and `default-login-url` (9) banks 9% of the set from
+   three pages. Report per-document variance next to the mean, or the headline number flatters.
+3. **Harvest yield was 1482 of 1842 topics discarded (80%)** — no docs link in the accepted answer.
+   Expected, not a defect. Recorded so the next harvest does not rediscover it. The non-zero exit
+   on that job was a deliberate kill once the pair target was met, not a build failure.
+
+### Residual, fixed in this pass
+
+`spot_check.md` recorded the population as 357 against an actual 359 — a rebuild after the line was
+written. Corrected to 359. Cosmetic, but [test_evidence.md](test_evidence.md) holds that a gate
+whose passing nobody can point to did not pass, and records with drifting numbers erode exactly
+that.

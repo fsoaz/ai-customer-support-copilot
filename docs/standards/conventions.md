@@ -10,6 +10,8 @@
 
 ## Repo layout
 
+**Target** (Stage 1+; not all present yet):
+
 ```
 backend/          FastAPI + evals  → Fly.io
 frontend/         Next.js admin    → Vercel
@@ -18,7 +20,9 @@ supabase/         migrations
 docs/             context / standards / execution
 ```
 
-Full breakdown in [../context/architecture.md](../context/architecture.md).
+**Today (Stage 0):** only `docs/` and `backend/evals/` (+ `backend/tests/`). See
+[../context/structure.md](../context/structure.md). Target shape:
+[../context/architecture.md](../context/architecture.md).
 
 ### Module boundaries in `backend/app/`
 

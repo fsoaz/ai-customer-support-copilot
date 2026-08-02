@@ -32,6 +32,8 @@ class HybridRetriever:
         dense_top_k: int = 50,
         lexical_top_k: int = 50,
         rrf_k: int = 60,
+        dense_weight: float = 1.0,
+        lexical_weight: float = 1.0,
         reranker: CrossEncoderReranker | None = None,
         rerank_candidates: int = 50,
     ) -> None:
@@ -46,6 +48,8 @@ class HybridRetriever:
         self.dense_top_k = dense_top_k
         self.lexical_top_k = lexical_top_k
         self.rrf_k = rrf_k
+        self.dense_weight = dense_weight
+        self.lexical_weight = lexical_weight
         self.reranker = reranker
         self.rerank_candidates = rerank_candidates
         self._id_to_doc = dict(zip(chunk_ids, doc_ids, strict=True))
@@ -58,6 +62,8 @@ class HybridRetriever:
         dense_top_k: int = 50,
         lexical_top_k: int = 50,
         rrf_k: int = 60,
+        dense_weight: float = 1.0,
+        lexical_weight: float = 1.0,
         reranker: CrossEncoderReranker | None = None,
         rerank_candidates: int = 50,
     ) -> HybridRetriever:
@@ -70,6 +76,8 @@ class HybridRetriever:
             dense_top_k=dense_top_k,
             lexical_top_k=lexical_top_k,
             rrf_k=rrf_k,
+            dense_weight=dense_weight,
+            lexical_weight=lexical_weight,
             reranker=reranker,
             rerank_candidates=rerank_candidates,
         )
@@ -96,7 +104,11 @@ class HybridRetriever:
     def retrieve(self, query: str, query_vec: np.ndarray) -> RetrieveResult:
         dense_ids = self.dense_search(query_vec)
         lexical_ids = self.lexical_search(query)
-        fused = reciprocal_rank_fusion([dense_ids, lexical_ids], k=self.rrf_k)
+        fused = reciprocal_rank_fusion(
+            [dense_ids, lexical_ids],
+            k=self.rrf_k,
+            weights=[self.dense_weight, self.lexical_weight],
+        )
 
         if self.reranker is None:
             chunk_ranked: list[tuple[str, str, float]] = []

@@ -133,10 +133,17 @@ Nightly: full eval suite against live models, results appended to
 
 ```bash
 cd backend
+# Best store + fusion weights so far (task 0.6):
 uv run python -m evals.runners.retrieval \
-  --dataset evals/datasets/retrieval_golden.jsonl \
-  --report  evals/reports/retrieval-$(git rev-parse --short HEAD).json
+  --db evals/store/auth0_chunks_bge_base_c256.sqlite \
+  --golden evals/datasets/retrieval_golden.jsonl \
+  --dense-weight 2 \
+  --tag c256_dense2
+uv run python -m evals.scripts.analyze_first_stage \
+  --db evals/store/auth0_chunks_bge_base_c256.sqlite \
+  --out evals/reports/first_stage_audit_c256.json
 # gate: recall@10 >= 0.85, MRR >= 0.60
+# As of 0.6: gate not credible until BUG-014 golden remediation (task 0.7).
 ```
 
 ### Stage 1 — generation

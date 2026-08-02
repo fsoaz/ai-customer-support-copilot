@@ -7,6 +7,7 @@
 > outside.
 
 > Scope and metrics: [product.md](product.md). Technical design: [architecture.md](architecture.md).
+> Repo tree as it stands: [structure.md](structure.md).
 
 ## Principles
 
@@ -45,8 +46,10 @@ weeks to discover, not three months.
 | Local chunk/embed/hybrid harness (0.2) | **done** — SQLite+FTS5 stand-in for pgvector |
 | Metric runner recall@k / MRR / nDCG (0.3) | **done** — `evals.runners.retrieval` |
 | Cross-encoder rerank + sweeps (0.4) | **done** — FlashRank; TinyBERT best, Δ negligible |
-| Stronger bi-encoder re-ingest (0.5) | **next** — first-stage bottleneck |
-| Stage 0 gate | **FAIL** — best recall@10 **0.320** · MRR **0.166** (need ≥ 0.85 / ≥ 0.60) |
+| Stronger bi-encoder re-ingest (0.5) | **done** — bge-base + chunk-256 best recall@10 **0.357** |
+| First-stage audit + fusion sweeps (0.6) | **done** — dense_w=2 → **0.368**; gate not solvable w/o label fix |
+| Golden remediation BUG-014 (0.7) | **next** |
+| Stage 0 gate | **FAIL** — best recall@10 **0.368** · MRR **0.192** (need ≥ 0.85 / ≥ 0.60) |
 
 Evidence: [../execution/test_evidence.md](../execution/test_evidence.md). Active work:
 [../execution/current_task.md](../execution/current_task.md).
@@ -71,6 +74,11 @@ Evidence: [../execution/test_evidence.md](../execution/test_evidence.md). Active
 
 Below this, prompt engineering cannot save the product. Keep iterating on retrieval, or conclude
 the corpus is unrepresentative and rebuild it.
+
+**As of task 0.6:** measured best recall@10 **0.368**. Pool@500 already recovers gold for ~88% of
+questions while recall@10 stays ~0.33 (ranking failure). BUG-014 label noise (~20% spot-check)
+means the gate is **not credible on the current golden set** — remediate labels (task 0.7) before
+further embedder sweeps. Evidence: [../execution/test_evidence.md](../execution/test_evidence.md).
 
 ---
 

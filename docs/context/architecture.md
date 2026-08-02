@@ -6,7 +6,7 @@
 > things. Every number here is internal planning, never a claim made to anyone outside.
 
 > *What* and *why* live in [product.md](product.md). *When* lives in [roadmap.md](roadmap.md).
-> This document is *how*.
+> This document is *how*. What exists on disk today (vs this target shape): [structure.md](structure.md).
 
 ## Shape
 

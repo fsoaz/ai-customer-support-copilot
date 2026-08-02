@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 import numpy as np
@@ -66,6 +67,17 @@ def test_rrf_prefers_consensus() -> None:
     assert set(ids) == {"a", "b", "c"}
 
 
+def test_rrf_weights_prefer_heavier_list() -> None:
+    # Disjoint tops: heavier list's rank-1 must beat the lighter list's rank-1.
+    fused = reciprocal_rank_fusion(
+        [["x", "a"], ["c", "y"]],
+        k=60,
+        weights=[1.0, 5.0],
+    )
+    ids = [i for i, _ in fused]
+    assert ids[0] == "c"
+
+
 def test_collapse_chunks_to_docs_keeps_best() -> None:
     ranked = [
         ("c1", "docA", 0.9),
@@ -113,3 +125,34 @@ def test_store_roundtrip_and_lexical(tmp_path: Path) -> None:
         hits = store.lexical_search("SAML SSO", top_k=5)
         assert hits
         assert hits[0][0] == "doc1::c0000"
+
+
+def test_ingest_meta_sidecar_and_sqlite_roundtrip(tmp_path: Path) -> None:
+    from evals.harness.ingest_meta import (
+        INGEST_META_KEY,
+        load_ingest_meta,
+        meta_sidecar_path,
+    )
+
+    db = tmp_path / "auth0_chunks_bge_base.sqlite"
+    payload = {
+        "task": "0.5",
+        "embedding_model": "BAAI/bge-base-en-v1.5",
+        "embedding_dim": 768,
+        "chunk_tokens": 512,
+    }
+    sidecar = meta_sidecar_path(db)
+    assert sidecar.name == "auth0_chunks_bge_base_meta.json"
+
+    with ChunkStore(db) as store:
+        store.set_meta(INGEST_META_KEY, json.dumps(payload))
+        store.write_json_meta(sidecar, payload)
+        store.commit()
+        loaded = load_ingest_meta(db_path=db, store=store)
+    assert loaded["embedding_model"] == "BAAI/bge-base-en-v1.5"
+    assert loaded["task"] == "0.5"
+
+    # Prefer SQLite over a stale/wrong sidecar.
+    sidecar.write_text('{"embedding_model": "WRONG"}\n', encoding="utf-8")
+    loaded2 = load_ingest_meta(db_path=db)
+    assert loaded2["embedding_model"] == "BAAI/bge-base-en-v1.5"

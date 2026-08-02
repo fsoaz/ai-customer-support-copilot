@@ -8,13 +8,21 @@ import numpy as np
 
 # Small, fast ONNX model — record name+dim in ingest_meta for run comparability.
 DEFAULT_EMBEDDING_MODEL = "BAAI/bge-small-en-v1.5"
+# BGE asymmetric query prefix (documents stay unprefixed at ingest).
+DEFAULT_QUERY_PREFIX = "Represent this sentence for searching relevant passages: "
 
 
 class Embedder:
-    def __init__(self, model_name: str = DEFAULT_EMBEDDING_MODEL) -> None:
+    def __init__(
+        self,
+        model_name: str = DEFAULT_EMBEDDING_MODEL,
+        *,
+        query_prefix: str | None = None,
+    ) -> None:
         from fastembed import TextEmbedding
 
         self.model_name = model_name
+        self.query_prefix = query_prefix
         self._model = TextEmbedding(model_name=model_name)
         # Probe dim once.
         probe = next(self._model.embed(["dimension probe"]))
@@ -28,9 +36,12 @@ class Embedder:
         return _l2_normalize(matrix)
 
     def embed_query(self, text: str) -> np.ndarray:
-        vec = next(self._model.embed([text]))
-        matrix = np.asarray(vec, dtype=np.float32).reshape(1, -1)
-        return _l2_normalize(matrix)[0]
+        return self.embed_documents([self.format_query(text)])[0]
+
+    def format_query(self, text: str) -> str:
+        if not self.query_prefix:
+            return text
+        return f"{self.query_prefix}{text}"
 
 
 def _l2_normalize(matrix: np.ndarray) -> np.ndarray:

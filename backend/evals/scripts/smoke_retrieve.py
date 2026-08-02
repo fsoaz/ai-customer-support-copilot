@@ -13,7 +13,8 @@ import sys
 from pathlib import Path
 
 from evals.harness.embed import Embedder
-from evals.harness.paths import GOLDEN_PATH, STORE_DB_PATH, STORE_META_PATH
+from evals.harness.ingest_meta import load_ingest_meta
+from evals.harness.paths import GOLDEN_PATH, STORE_DB_PATH
 from evals.harness.retrieve import HybridRetriever
 from evals.harness.store import ChunkStore
 
@@ -107,10 +108,8 @@ def main() -> int:
         step = max(len(answerable) // args.smoke_n, 1)
         sample = [answerable[i] for i in range(0, len(answerable), step)][: args.smoke_n]
 
-        model_name = "BAAI/bge-small-en-v1.5"
-        if STORE_META_PATH.is_file():
-            meta = json.loads(STORE_META_PATH.read_text(encoding="utf-8"))
-            model_name = meta.get("embedding_model", model_name)
+        meta = load_ingest_meta(db_path=args.db, store=store)
+        model_name = meta.get("embedding_model", "BAAI/bge-small-en-v1.5")
 
         print(f"smoke: embedding queries with {model_name} …")
         embedder = Embedder(model_name=model_name)

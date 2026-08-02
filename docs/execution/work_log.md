@@ -23,6 +23,52 @@ direction changes. Do not write one for routine implementation that the diff exp
 
 ---
 
+## 2026-08-02 — Stage 0 — Task 0.6 audit: gate not solvable without golden fix
+
+**Changed:** First-stage miss audit (`evals.scripts.analyze_first_stage`) on the c256 store;
+weighted RRF + BGE query-prefix knobs on the runner. Dense-weight×2 is a new best
+(recall@10 **0.368** · MRR **0.192**) — still far from the gate.
+
+**Why audit before bge-large:** 0.5 showed bigger BGE barely moves `hit_at_any`. Burning hours on
+another re-ingest without knowing whether the golden set can support 0.85 would be cargo-cult.
+
+**Solvability call:** **Do not keep embedding-sweeping toward 0.85 on this golden set.** Pool@500
+already has `fused_hit` **0.883** while recall@10 stays ~0.33 (ranking failure). BUG-014 ~20%
+label noise (confirmed again on complete-miss sample) caps measured metrics below the gate.
+Remediate labels first.
+
+**Unblocks:** Task 0.7 — golden remediation (BUG-014) then re-baseline.
+
+**Open:**
+- After remediation, revisit CE rerank over large pools (TinyBERT was too weak; MiniLM too slow on CPU)
+- `bge-large` still unused — only worth it after labels are trustworthy
+
+## 2026-08-02 — Stage 0 — Task 0.5 bge-base re-ingest; modest lift, gate still FAIL
+
+**Changed:** Side-by-side stores with `BAAI/bge-base-en-v1.5` (768-d). Fixed ingest meta ↔ `--db`
+coupling (`evals/harness/ingest_meta.py`: SQLite meta → sidecar → default file). Full golden runs:
+
+| Config | recall@10 | MRR | hit_at_any |
+|---|---|---|---|
+| bge-base 512, RRF | 0.3315 | 0.1668 | 0.588 |
+| bge-base 512 + TinyBERT @50 | 0.3259 | 0.1680 | 0.510 |
+| **bge-base 256, RRF** | **0.3565** | **0.1837** | 0.571 |
+| bge-base 256 + TinyBERT @50 | 0.3454 | 0.1671 | 0.507 |
+
+**Why:** 0.4 showed rerank cannot recover gold outside the candidate pool; 0.5 tests a stronger
+bi-encoder and a smaller chunk size as the next first-stage levers.
+
+**Why this does not clear the gate:** Best recall@10 **0.356** — Δ only ~+0.036 vs 0.4 best.
+`hit_at_any` stays ~0.57. Gap remains ~**0.49** recall@10 / ~**0.42** MRR.
+
+**Unblocks:** Task 0.6 — further first-stage work (larger embedder, query prefixes, hybrid weights,
+and/or golden-label audit). Do not spend more cycles on TinyBERT pool size.
+
+**Open:**
+- BUG-014 label noise still unquantified against achievable ceiling
+- `bge-large` not tried (deferred; CPU ingest already ~1.3–2.6 h for base)
+- Design partner still unidentified
+
 ## 2026-08-02 — Stage 0 — Task 0.4 rerank wired; sweeps show first-stage bottleneck
 
 **Changed:** Cross-encoder rerank via FlashRank ONNX (`evals/harness/rerank.py`), `--rerank` on

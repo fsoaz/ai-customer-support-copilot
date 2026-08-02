@@ -6,7 +6,8 @@
 > things. Every number here is internal planning, never a claim made to anyone outside.
 
 > Internal source of truth for *what* we are building and *why*. Architecture lives in
-> [architecture.md](architecture.md); sequencing and gates live in [roadmap.md](roadmap.md).
+> [architecture.md](architecture.md); sequencing and gates live in [roadmap.md](roadmap.md);
+> on-disk layout today: [structure.md](structure.md).
 
 ## Vision
 

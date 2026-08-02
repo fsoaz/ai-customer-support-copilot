@@ -8,8 +8,8 @@ Multi-tenant SaaS. Built solo.
 
 ## Status
 
-**Stage 0 in progress.** Tasks 0.1–0.4 done (corpus, ingest, metrics, rerank sweeps). Stage 0 gate
-still **FAIL** — best recall@10 ≈ 0.32 (gap ~0.53). Next: stronger first-stage embeddings
+**Stage 0 in progress.** Tasks 0.1–0.6 done. Stage 0 gate still **FAIL** — best recall@10 ≈ 0.37
+(gap ~0.48). **0.6 call:** golden labels must be remediated before more embedder sweeps
 ([current_task.md](docs/execution/current_task.md)). Product API/UI intentionally absent.
 
 ### Stage 0 harness (local evals only)
@@ -17,10 +17,17 @@ still **FAIL** — best recall@10 ≈ 0.32 (gap ~0.53). Next: stronger first-sta
 ```bash
 cd backend
 uv run python -m evals.scripts.fetch_docs          # pinned Auth0 MIT docs → corpus/.../raw
-uv run python -m evals.scripts.ingest_docs         # chunk + embed → evals/store/
-uv run python -m evals.scripts.smoke_retrieve      # coverage + small hit@50 check
-uv run python -m evals.runners.retrieval           # full golden-set recall@k / MRR / nDCG
-uv run python -m evals.runners.retrieval --rerank  # + FlashRank cross-encoder (default off)
+uv run python -m evals.scripts.ingest_docs         # default: bge-small → evals/store/
+# Best store so far (task 0.5): bge-base, 256-token chunks
+uv run python -m evals.scripts.ingest_docs \
+  --model BAAI/bge-base-en-v1.5 --chunk-tokens 256 \
+  --db evals/store/auth0_chunks_bge_base_c256.sqlite
+uv run python -m evals.scripts.smoke_retrieve \
+  --db evals/store/auth0_chunks_bge_base_c256.sqlite
+uv run python -m evals.runners.retrieval \
+  --db evals/store/auth0_chunks_bge_base_c256.sqlite --dense-weight 2   # best measured
+uv run python -m evals.scripts.analyze_first_stage \
+  --db evals/store/auth0_chunks_bge_base_c256.sqlite                   # pool/channel audit
 ```
 
 Measured results live in [docs/execution/test_evidence.md](docs/execution/test_evidence.md).
@@ -59,14 +66,15 @@ documented trigger to revisit in
 
 ```
 docs/
-  context/     product.md · architecture.md · roadmap.md
+  context/     product.md · architecture.md · roadmap.md · structure.md
   standards/   conventions.md · api_rules.md · testing.md · ai_agent_rules.md
   execution/   current_task.md · work_log.md · review_notes.md · test_evidence.md
                qa_report_stage0.md
 ```
 
 Reading order for anyone working on this repo: [product.md](docs/context/product.md) →
-[roadmap.md](docs/context/roadmap.md) → [architecture.md](docs/context/architecture.md).
+[roadmap.md](docs/context/roadmap.md) → [architecture.md](docs/context/architecture.md) →
+[structure.md](docs/context/structure.md) (what exists on disk today).
 
 ## Operating principles
 

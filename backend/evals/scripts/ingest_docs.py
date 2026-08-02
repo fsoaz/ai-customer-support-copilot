@@ -21,12 +21,12 @@ from evals.harness.chunking import (
 )
 from evals.harness.clean import markdown_to_text
 from evals.harness.embed import DEFAULT_EMBEDDING_MODEL, Embedder
+from evals.harness.ingest_meta import INGEST_META_KEY, meta_sidecar_path
 from evals.harness.paths import (
     MANIFEST_PATH,
     PIN_PATH,
     RAW_DIR,
     STORE_DB_PATH,
-    STORE_META_PATH,
 )
 from evals.harness.store import ChunkStore, StoredChunk
 
@@ -161,8 +161,15 @@ def ingest(
         flush(store)
 
         elapsed = time.perf_counter() - started
+        is_default_store = db_path.resolve() == STORE_DB_PATH.resolve()
+        is_default_fingerprint = (
+            embedder.model_name == DEFAULT_EMBEDDING_MODEL
+            and chunk_tokens == DEFAULT_CHUNK_TOKENS
+            and overlap_ratio == DEFAULT_OVERLAP_RATIO
+            and is_default_store
+        )
         meta = {
-            "task": "0.2",
+            "task": "0.2" if is_default_fingerprint else "0.5",
             "repo": manifest.get("repo"),
             "commit": sha,
             "expected_commit": pin,
@@ -176,10 +183,11 @@ def ingest(
             "skipped_empty": skipped_empty,
             "manifest_document_count": len(manifest["documents"]),
             "ingest_seconds": round(elapsed, 2),
-            "store_db": str(db_path),
+            "store_db": str(db_path.resolve()),
         }
-        store.set_meta("ingest_meta_json", json.dumps(meta))
-        store.write_json_meta(STORE_META_PATH, meta)
+        store.set_meta(INGEST_META_KEY, json.dumps(meta))
+        sidecar = meta_sidecar_path(db_path)
+        store.write_json_meta(sidecar, meta)
         store.commit()
         return meta
 
@@ -216,7 +224,7 @@ def main() -> int:
         f"ingested {meta['document_count']} docs / {meta['chunk_count']} chunks "
         f"in {meta['ingest_seconds']}s → {meta['store_db']}"
     )
-    print(f"meta → {STORE_META_PATH}")
+    print(f"meta → {meta_sidecar_path(args.db)}")
     return 0
 
 

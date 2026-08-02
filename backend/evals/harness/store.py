@@ -214,6 +214,17 @@ class ChunkStore:
         ).fetchall()
         return {str(r["chunk_id"]): str(r["content"]) for r in rows}
 
+    def document_titles(self) -> dict[str, str]:
+        rows = self._conn.execute("SELECT gold_doc_id, title FROM documents").fetchall()
+        return {str(r["gold_doc_id"]): str(r["title"]) for r in rows}
+
+    def document_text(self, gold_doc_id: str) -> str:
+        rows = self._conn.execute(
+            "SELECT content FROM chunks WHERE gold_doc_id = ? ORDER BY chunk_index",
+            (gold_doc_id,),
+        ).fetchall()
+        return " ".join(str(r["content"]) for r in rows)
+
     def write_json_meta(self, path: Path, payload: dict) -> None:
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")

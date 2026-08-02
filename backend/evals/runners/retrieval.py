@@ -17,8 +17,9 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 from evals.harness.embed import Embedder
+from evals.harness.ingest_meta import load_ingest_meta
 from evals.harness.metrics import aggregate_answerable, rank_of
-from evals.harness.paths import EVALS_ROOT, GOLDEN_PATH, STORE_DB_PATH, STORE_META_PATH
+from evals.harness.paths import EVALS_ROOT, GOLDEN_PATH, STORE_DB_PATH
 from evals.harness.rerank import DEFAULT_RERANK_MODEL, CrossEncoderReranker
 from evals.harness.retrieve import HybridRetriever
 from evals.harness.store import ChunkStore
@@ -38,12 +39,6 @@ def load_golden(path: Path) -> list[dict]:
     return rows
 
 
-def load_ingest_meta() -> dict:
-    if STORE_META_PATH.is_file():
-        return json.loads(STORE_META_PATH.read_text(encoding="utf-8"))
-    return {}
-
-
 def run_retrieval_eval(
     *,
     db_path: Path = STORE_DB_PATH,
@@ -51,6 +46,9 @@ def run_retrieval_eval(
     dense_top_k: int = 50,
     lexical_top_k: int = 50,
     rrf_k: int = 60,
+    dense_weight: float = 1.0,
+    lexical_weight: float = 1.0,
+    query_prefix: str | None = None,
     rerank: bool = False,
     rerank_model: str = DEFAULT_RERANK_MODEL,
     rerank_candidates: int = 50,
@@ -60,22 +58,23 @@ def run_retrieval_eval(
     if limit is not None:
         golden = golden[:limit]
 
-    ingest_meta = load_ingest_meta()
-    model_name = ingest_meta.get("embedding_model", "BAAI/bge-small-en-v1.5")
-
     answerable = [r for r in golden if r.get("answerable")]
     unanswerable = [r for r in golden if not r.get("answerable")]
 
     started = time.perf_counter()
-    embedder = Embedder(model_name=model_name)
     reranker = CrossEncoderReranker(model_name=rerank_model) if rerank else None
 
     with ChunkStore(db_path) as store:
+        ingest_meta = load_ingest_meta(db_path=db_path, store=store)
+        model_name = ingest_meta.get("embedding_model", "BAAI/bge-small-en-v1.5")
+        embedder = Embedder(model_name=model_name, query_prefix=query_prefix)
         retriever = HybridRetriever.from_store(
             store,
             dense_top_k=dense_top_k,
             lexical_top_k=lexical_top_k,
             rrf_k=rrf_k,
+            dense_weight=dense_weight,
+            lexical_weight=lexical_weight,
             reranker=reranker,
             rerank_candidates=rerank_candidates,
         )
@@ -94,7 +93,8 @@ def run_retrieval_eval(
             )
 
         all_rows = answerable + unanswerable
-        questions = [r["question"] for r in all_rows]
+        # Apply query prefix (if any) before batch embed — documents stay unprefixed.
+        questions = [embedder.format_query(r["question"]) for r in all_rows]
         q_matrix = embedder.embed_documents(questions, batch_size=64)
 
         answerable_detail: list[dict] = []
@@ -183,9 +183,12 @@ def run_retrieval_eval(
             "overlap_ratio": ingest_meta.get("overlap_ratio"),
             "tokenizer": ingest_meta.get("tokenizer"),
             "corpus_commit": ingest_meta.get("commit"),
+            "query_prefix": query_prefix,
             "dense_top_k": dense_top_k,
             "lexical_top_k": lexical_top_k,
             "rrf_k": rrf_k,
+            "dense_weight": dense_weight,
+            "lexical_weight": lexical_weight,
             "rerank": (
                 {
                     "enabled": True,
@@ -258,6 +261,18 @@ def main() -> int:
     parser.add_argument("--dense-top-k", type=int, default=50)
     parser.add_argument("--lexical-top-k", type=int, default=50)
     parser.add_argument("--rrf-k", type=int, default=60)
+    parser.add_argument("--dense-weight", type=float, default=1.0)
+    parser.add_argument("--lexical-weight", type=float, default=1.0)
+    parser.add_argument(
+        "--query-prefix",
+        default=None,
+        help="Optional BGE-style query instruction prefix (documents stay unprefixed)",
+    )
+    parser.add_argument(
+        "--bge-query-prefix",
+        action="store_true",
+        help="Use DEFAULT_QUERY_PREFIX from evals.harness.embed",
+    )
     parser.add_argument(
         "--rerank",
         action="store_true",
@@ -274,6 +289,12 @@ def main() -> int:
         print(f"store missing: {args.db}; run ingest_docs first", file=sys.stderr)
         return 1
 
+    from evals.harness.embed import DEFAULT_QUERY_PREFIX
+
+    query_prefix = args.query_prefix
+    if args.bge_query_prefix:
+        query_prefix = DEFAULT_QUERY_PREFIX
+
     try:
         report = run_retrieval_eval(
             db_path=args.db,
@@ -281,6 +302,9 @@ def main() -> int:
             dense_top_k=args.dense_top_k,
             lexical_top_k=args.lexical_top_k,
             rrf_k=args.rrf_k,
+            dense_weight=args.dense_weight,
+            lexical_weight=args.lexical_weight,
+            query_prefix=query_prefix,
             rerank=args.rerank,
             rerank_model=args.rerank_model,
             rerank_candidates=args.rerank_candidates,

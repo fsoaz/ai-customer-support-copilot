@@ -35,22 +35,54 @@ diagnosis.
 ## Stage 0 — Prove retrieval
 
 **Gate:** recall@10 ≥ 0.85 · MRR ≥ 0.60
-**Dataset:** `backend/evals/datasets/retrieval_golden.jsonl` (target 300–500 pairs, ≥ 30 marked
-unanswerable)
+**Dataset:** `backend/evals/datasets/retrieval_golden.jsonl` (359 answerable + 31 unanswerable)
 **Runner:** `uv run python -m evals.runners.retrieval`
 
 | Date | Commit | Metric | Threshold | Measured | Pass | Notes |
 |---|---|---|---|---|---|---|
-| — | — | recall@1 | — (reported) | — | — | Not yet run |
-| — | — | recall@5 | — (reported) | — | — | Not yet run |
-| — | — | recall@10 | ≥ 0.85 | — | — | **Gate metric** |
-| — | — | MRR | ≥ 0.60 | — | — | **Gate metric** |
-| — | — | nDCG@10 | — (reported) | — | — | Not yet run |
+| 2026-08-01 | `5eb5097`+wip | recall@1 | — (reported) | 0.0975 | — | Baseline; no rerank |
+| 2026-08-01 | `5eb5097`+wip | recall@5 | — (reported) | 0.2284 | — | Baseline; no rerank |
+| 2026-08-01 | `5eb5097`+wip | recall@10 | ≥ 0.85 | **0.3148** | **FAIL** | **Gate metric** — first full run |
+| 2026-08-01 | `5eb5097`+wip | MRR | ≥ 0.60 | **0.1625** | **FAIL** | **Gate metric** |
+| 2026-08-01 | `5eb5097`+wip | nDCG@10 | — (reported) | 0.1900 | — | Baseline; no rerank |
 
 **Configuration to record with each run:** embedding model, chunk size, chunk overlap, RRF weights,
 reranker model, top-k before and after rerank.
 
-**Status:** not started. Blocked on task 0.1 — see [current_task.md](current_task.md).
+**Status:** task 0.4 sweeps done; Stage 0 gate **not** cleared. Next: task 0.5 stronger bi-encoder.
+
+**Diagnosis (2026-08-01 FAIL):** Pre-rerank hybrid with `bge-small-en-v1.5` recovers the gold doc
+in top-10 for only ~31% of answerable questions. Smoke hit@50 (60%) overstated gate readiness.
+Unanswerable mean top1 RRF 0.0298 (excluded from gate metrics).
+
+### Task 0.4 sweeps (2026-08-02) — rerank on/off + candidate pool
+
+Same store/fingerprint as 0.2. Runner: `uv run python -m evals.runners.retrieval [--rerank]`.
+
+| Date | Commit | Config | recall@10 | MRR | Pass | Notes |
+|---|---|---|---|---|---|---|
+| 2026-08-01 | `5eb5097`+wip | RRF only (baseline) | 0.3148 | 0.1625 | FAIL | hit_at_any 0.565 |
+| 2026-08-02 | `5eb5097`+wip | + TinyBERT CE @50 | **0.3203** | **0.1658** | FAIL | **best to date**; Δ negligible |
+| 2026-08-02 | `5eb5097`+wip | + TinyBERT CE @100 | 0.3036 | 0.1579 | FAIL | denser pool hurt @10 |
+| 2026-08-02 | `5eb5097`+wip | MiniLM-L-12 CE @50 | — | — | — | **no metrics** — process killed after ~90 min @ ~700% CPU; shell exited error. Not viable for full-set CPU sweeps |
+
+**Best config to date:** `bge-small` + hybrid RRF top-50 + `ms-marco-TinyBERT-L-2-v2` rerank.
+**Gap to gate:** recall@10 **0.53** short of 0.85; MRR **0.43** short of 0.60.
+**Diagnosis:** first-stage bottleneck — rerank cannot help when gold is outside the candidate pool.
+Next leverage is a stronger embedding model / chunking (task 0.5), not a heavier cross-encoder.
+
+Reports: `evals/reports/retrieval_rerank_on_k50.json`, `…_k100.json`.
+
+### Task 0.2 ingest fingerprint (2026-08-01)
+
+| Field | Value |
+|---|---|
+| Commit pin | `5258d17ede3eea0ed0e330d15f8921a542564f68` |
+| Embedding | `BAAI/bge-small-en-v1.5` (384-d, fastembed, L2-normalized) |
+| Chunk | 512 whitespace tokens, 0.15 overlap |
+| Store | SQLite + FTS5 (`evals/store/auth0_chunks.sqlite`) — 1734 docs / 2688 chunks |
+| Coverage | 359/359 answerable `gold_doc_id`s |
+| Smoke hit@50 (n=10, pre-rerank) | 6/10 |
 
 ---
 

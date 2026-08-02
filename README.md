@@ -8,9 +8,23 @@ Multi-tenant SaaS. Built solo.
 
 ## Status
 
-**Stage 0 in progress.** Planning is documented. Task 0.1 (Auth0 proxy corpus + retrieval golden
-set) is complete; product API/UI code is still intentionally absent. See
-[docs/execution/current_task.md](docs/execution/current_task.md).
+**Stage 0 in progress.** Tasks 0.1–0.4 done (corpus, ingest, metrics, rerank sweeps). Stage 0 gate
+still **FAIL** — best recall@10 ≈ 0.32 (gap ~0.53). Next: stronger first-stage embeddings
+([current_task.md](docs/execution/current_task.md)). Product API/UI intentionally absent.
+
+### Stage 0 harness (local evals only)
+
+```bash
+cd backend
+uv run python -m evals.scripts.fetch_docs          # pinned Auth0 MIT docs → corpus/.../raw
+uv run python -m evals.scripts.ingest_docs         # chunk + embed → evals/store/
+uv run python -m evals.scripts.smoke_retrieve      # coverage + small hit@50 check
+uv run python -m evals.runners.retrieval           # full golden-set recall@k / MRR / nDCG
+uv run python -m evals.runners.retrieval --rerank  # + FlashRank cross-encoder (default off)
+```
+
+Measured results live in [docs/execution/test_evidence.md](docs/execution/test_evidence.md).
+Reports under `backend/evals/reports/` are gitignored.
 
 ## V1 scope
 

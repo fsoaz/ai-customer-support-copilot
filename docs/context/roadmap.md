@@ -37,12 +37,27 @@ The entire question: **can hybrid retrieval find the right knowledge-base docume
 support question?** If it cannot, nothing built on top of it matters, and that should cost three
 weeks to discover, not three months.
 
+### Progress (as of 2026-08-02)
+
+| Item | Status |
+|---|---|
+| Auth0 proxy corpus + golden set (0.1) | **done** — 359 answerable + 31 unanswerable |
+| Local chunk/embed/hybrid harness (0.2) | **done** — SQLite+FTS5 stand-in for pgvector |
+| Metric runner recall@k / MRR / nDCG (0.3) | **done** — `evals.runners.retrieval` |
+| Cross-encoder rerank + sweeps (0.4) | **done** — FlashRank; TinyBERT best, Δ negligible |
+| Stronger bi-encoder re-ingest (0.5) | **next** — first-stage bottleneck |
+| Stage 0 gate | **FAIL** — best recall@10 **0.320** · MRR **0.166** (need ≥ 0.85 / ≥ 0.60) |
+
+Evidence: [../execution/test_evidence.md](../execution/test_evidence.md). Active work:
+[../execution/current_task.md](../execution/current_task.md).
+
 ### Work
 
 - Build the proxy corpus (see [The no-data problem](#the-no-data-problem) below).
 - Ingestion path: fetch, clean, chunk (~512 tokens, ~15% overlap), embed into `kb_chunks`.
 - Hybrid retrieval: pgvector cosine + `tsvector` full-text, fused with RRF, cross-encoder rerank of
-  top ~50 → top ~8.
+  top ~50 → top ~8. *(Stage 0 harness uses SQLite + numpy cosine + FTS5 + FlashRank until product
+  Postgres exists.)*
 - `backend/evals/` with retrieval metrics: recall@1/5/10, MRR, nDCG.
 - Parameter sweep: chunk size, overlap, fusion weights, rerank on/off, embedding model. Every run
   recorded in [../execution/test_evidence.md](../execution/test_evidence.md).

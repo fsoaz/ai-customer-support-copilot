@@ -22,4 +22,9 @@ backend/evals/corpus/**/forum/raw/
 .DS_Store
 
 # Eval reports (generated)
-backend/evals/reports/
+backend/evals/reports/*
+!backend/evals/reports/README.md
+
+# Stage 0 local chunk/embed harness store (regenerate via ingest_docs)
+backend/evals/store/*
+!backend/evals/store/README.md

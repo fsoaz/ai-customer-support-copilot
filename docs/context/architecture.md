@@ -305,7 +305,7 @@ even though it cannot read them.
 
 ```
 backend/
-  app/
+  app/                # Stage 1+ — not started (gated on Stage 0)
     api/v1/           FastAPI routers
     auth/             JWKS validation, tenant-scoped session dependency
     ai/
@@ -317,11 +317,15 @@ backend/
     ingest/           KB connectors, chunking, embedding
     workers/          queue consumer entrypoints
     db/               SQLAlchemy models, repositories
-  evals/
-    datasets/         golden sets: retrieval, generation, redaction
-    runners/          recall@k, MRR, nDCG, LLM judge, groundedness
-    reports/          CI-consumable JSON + markdown diff vs baseline
-  tests/              unit, integration
+  evals/              # Stage 0 — live
+    corpus/           Auth0 proxy docs + forum harvest
+    datasets/         golden sets: retrieval (generation/redaction later)
+    harness/          chunk, clean, embed, SQLite+FTS store, hybrid+RRF, FlashRank
+    scripts/          fetch / parse / golden / ingest / smoke CLIs
+    runners/          recall@k, MRR, nDCG (LLM judge later)
+    store/            local chunk DB (gitignored artefacts)
+    reports/          JSON eval output (gitignored)
+  tests/              unit (integration later)
 supabase/
   migrations/         forward-only SQL migrations
 frontend/             Next.js App Router — admin dashboard (Vercel)

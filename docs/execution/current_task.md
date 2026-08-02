@@ -8,34 +8,38 @@
 > One active task at a time. Rewritten as work advances; history goes to [work_log.md](work_log.md).
 
 **Stage:** 0 — Prove retrieval ([../context/roadmap.md](../context/roadmap.md))
-**Task:** 0.2 — Ingest Auth0 docs into a local chunk/embed store for hybrid retrieval experiments
-**Started:** 2026-07-30
-**Status:** not started (unblocked after QA remediation)
+**Task:** 0.5 — Stronger first-stage retrieval (embedding model / chunking re-ingest)
+**Started:** 2026-08-02
+**Status:** not started (unblocked after 0.4 sweeps)
 
 ## Prior work closed
 
-**0.1 — Auth0 proxy corpus + golden set** — done, then **QA-remediated** 2026-07-30.
-See [work_log.md](work_log.md) and [qa_report_stage0.md](qa_report_stage0.md).
+**0.4 — Rerank path + parameter sweeps** — done 2026-08-02.
+See [work_log.md](work_log.md) and [test_evidence.md](test_evidence.md).
 
-### Golden set (post-remediation)
+- Cross-encoder wired via FlashRank (`--rerank`, default off)
+- Best so far: TinyBERT rerank @50 → recall@10 **0.320** · MRR **0.166** (Δ +0.005 / +0.003 vs off)
+- Larger candidate pool (k=100) **hurt** slightly
+- MiniLM-L-12 @50: killed after ~90 min CPU (~700%); shell exited error; **no metrics**
+- Gap to gate remains ~0.53 recall@10 / ~0.43 MRR — bottleneck is first-stage recall
+  (`hit_at_any` ≈ 0.57; rerank cannot recover gold outside the candidate pool)
 
-- `backend/evals/datasets/retrieval_golden.jsonl` — **357 answerable** (100% in MIT manifest,
-  **0** synthetic) + **31 unanswerable** (25 near-miss + 6 absurdist)
-- Spot-check: seeded sample, 16/20 pass — [../../backend/evals/datasets/spot_check.md](../../backend/evals/datasets/spot_check.md)
-- Docs pin: `backend/evals/corpus/auth0/docs/expected_commit.txt`
+**0.3 — Metric runners + baseline** — done 2026-08-01.
+**0.2 — Ingest/embed harness** — done 2026-08-01.
+**0.1 — Auth0 proxy corpus + golden set** — done, QA-remediated 2026-07-30.
 
-## Why 0.2 next
+## Why 0.5 next
 
-Labels exist and are gateable (corpus coverage 100%). Stage 0 still needs chunking, embeddings,
-hybrid retrieval, and metric runners before recall@10 / MRR can be measured.
+Rerank barely moves the gate metrics. ~43% of answerable questions never see the gold doc in the
+fused candidate set. Closing the gap requires a stronger bi-encoder and/or chunking changes, which
+means re-ingest.
 
-## Definition of done (0.2)
+## Definition of done (0.5)
 
-- [ ] Chunk Auth0 docs (~512 tokens, ~15% overlap) from the **pinned MIT GitHub** corpus only
-- [ ] Embed chunks; store locally for Stage 0 (Postgres+pgvector or equivalent harness DB)
-- [ ] Every answerable `gold_doc_id` in the golden set must resolve to an ingested document
-      (coverage already 100% at label time — keep it that way after chunk/embed)
-- [ ] Smoke: retrieve for a handful of golden questions returns the gold doc in top-50 before rerank
+- [ ] Re-ingest with at least one stronger embedding model (e.g. `bge-base-en-v1.5`)
+- [ ] Optional: chunk size/overlap variant stored side-by-side or as a tagged DB
+- [ ] Full golden-set run (rerank off and on) recorded in [test_evidence.md](test_evidence.md)
+- [ ] Quantify whether `hit_at_any` and recall@10 move enough to justify further sweeps
 
 ## Blocking gate ahead
 

@@ -125,17 +125,28 @@ class HybridRetriever:
                 reranked=False,
             )
 
-        candidate_ids = [cid for cid, _score in fused[: self.rerank_candidates]]
-        texts = self.store.get_chunk_texts(candidate_ids)
-        passages = [(cid, texts[cid]) for cid in candidate_ids if cid in texts]
-        hits = self.reranker.rerank(query, passages)
-        chunk_ranked = []
-        for hit in hits:
-            gold = self._id_to_doc.get(hit.chunk_id)
-            if gold is None:
+        # Deduplicate to unique docs before CE (Task 0.8): score one passage per doc
+        # using the highest-RRF chunk text. Cuts CE cost ~30% vs chunk-level pools and
+        # matches gate metrics which are document-level.
+        doc_chunk: list[tuple[str, str]] = []  # (doc_id, chunk_id)
+        seen_docs: set[str] = set()
+        for chunk_id, _score in fused:
+            gold = self._id_to_doc.get(chunk_id)
+            if gold is None or gold in seen_docs:
                 continue
-            chunk_ranked.append((hit.chunk_id, gold, hit.score))
-        docs = collapse_chunks_to_docs(chunk_ranked)
+            seen_docs.add(gold)
+            doc_chunk.append((gold, chunk_id))
+            if len(doc_chunk) >= self.rerank_candidates:
+                break
+
+        chunk_ids = [cid for _doc, cid in doc_chunk]
+        texts = self.store.get_chunk_texts(chunk_ids)
+        # Passage id = gold_doc_id so CE scores map straight to documents.
+        passages = [
+            (doc_id, texts[cid]) for doc_id, cid in doc_chunk if cid in texts
+        ]
+        hits = self.reranker.rerank(query, passages)
+        docs = [(hit.chunk_id, hit.score) for hit in hits]
         return RetrieveResult(
             ranked_docs=docs,
             dense_chunk_ids=dense_ids,

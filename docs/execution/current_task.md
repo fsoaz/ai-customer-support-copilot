@@ -8,38 +8,47 @@
 > One active task at a time. Rewritten as work advances; history goes to [work_log.md](work_log.md).
 
 **Stage:** 0 — Prove retrieval ([../context/roadmap.md](../context/roadmap.md))
-**Task:** 0.7 — Golden-label remediation (BUG-014) + re-baseline
-**Started:** 2026-08-02
-**Status:** not started (unblocked after 0.6 solvability call)
+**Task:** 0.9 — Ranking path after TinyBERT dead-end (GPU/sampled MiniLM or alt second-stage)
+**Started:** 2026-08-04
+**Status:** not started (unblocked after 0.8 evidence)
 
 ## Prior work closed
 
-**0.6 — Further first-stage + solvability call** — done 2026-08-02.
+**0.8 — Ranking quality (CE over larger pool)** — closed 2026-08-04 (partial metrics; MiniLM aborted).
 See [work_log.md](work_log.md) and [test_evidence.md](test_evidence.md).
 
-- Audit: pool@500 `fused_hit` **0.883** but RRF recall@10 stuck ~0.33 → ranking failure
-- Complete misses @500: **11.4%**; sample is dominated by BUG-014 first-link noise
-- Sweeps: BGE query prefix / lex-heavy / pool@200 all flat or worse; **dense_weight=2** →
-  recall@10 **0.3677** (new best, still FAIL)
-- **Call:** gate not reachable without golden remediation — stop pure embedder sweeps
+### Definition of done (0.8)
 
+- [x] Evaluate cross-encoder (or equivalent) rerank over pool ≥100 on remediated golden
+- [x] Record recall@10 / MRR vs remediated RRF baseline (0.393 / 0.204)
+- [x] State whether gate 0.85 is within reach or needs recalibration / different architecture
+
+### 0.8 outcomes
+
+- Harness: CE now reranks **unique docs** (best RRF chunk text per doc), not raw chunks.
+- TinyBERT @100 / @200 unique docs: recall@10 **0.314 / 0.319** — **worse** than RRF **0.393**.
+- MiniLM-L-12 @100: full sweep **stopped** (~3–4h CPU estimate; no metrics).
+- **Call:** TinyBERT is a dead end. Gate 0.85 stays; not near-term without a stronger/faster
+  second-stage. Do not more TinyBERT pool sweeps. Do not silently lower the gate.
+
+**0.7 — Golden-label remediation (BUG-014) + re-baseline** — done 2026-08-04.
+**0.6 — Further first-stage + solvability call** — done 2026-08-02.
 **0.5 — bge-base + chunk-256** — done 2026-08-02.
 **0.4 — Rerank sweeps** — done 2026-08-02.
 **0.3 / 0.2 / 0.1** — done earlier.
 
-## Why 0.7 next
+## Why 0.9 next
 
-Measured recall treats wrong golds as retrieval misses. Spot-check noise (~20%) plus the
-complete-miss sample (SMTP→allowlist, viewport→text elements, B2B arch→subscriptions, etc.)
-means we are optimizing against a contaminated target. Fix labels, then re-measure on the same
-best store (`bge-base` c256, dense_weight=2).
+Candidates remain recoverable (`fused_hit@500 ≈ 0.90`) but neither RRF nor TinyBERT ranks them
+into top-10 at gate quality. Need either (a) MiniLM/stronger CE with affordable runtime (GPU,
+quantized, or n≈50 pilot then full), or (b) a different second-stage (e.g. late-interaction /
+listwise) — decide with a cheap pilot before another multi-hour CPU burn.
 
-## Definition of done (0.7)
+## Definition of done (0.9)
 
-- [ ] Re-judge a substantial slice of answerable pairs (prioritize complete misses + low-rank hits)
-- [ ] Update `retrieval_golden.jsonl` (and/or `build_golden` gold selection) so gold = answering doc
-- [ ] Re-run full retrieval on remediated set with best config; record in test_evidence
-- [ ] State whether gate 0.85 is now a credible target or must be recalibrated
+- [ ] Choose and run one affordable stronger-ranking pilot on remediated golden (document runtime)
+- [ ] Record recall@10 / MRR vs RRF 0.393 / 0.204
+- [ ] Explicit call: continue toward 0.85, recalibrate gate, or change retrieval architecture
 
 ## Blocking gate ahead
 

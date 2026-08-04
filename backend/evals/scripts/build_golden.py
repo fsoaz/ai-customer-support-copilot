@@ -2,6 +2,7 @@
 
 Only mirror-backed golds (manifest hits) are kept — no synthetic auth0-url-* (BUG-001).
 Unanswerable rows are hand-authored only (BUG-002/003).
+Ambiguous multi-candidate threads are skipped into a review file (BUG-014).
 """
 
 from __future__ import annotations
@@ -12,10 +13,15 @@ import json
 import random
 import re
 import sys
-from html import unescape
 from pathlib import Path
 
-from bs4 import BeautifulSoup
+from evals.harness.golden_links import (
+    accepted_answer_htmls,
+    aggregate_candidates,
+    collect_resolved_hits,
+    html_to_text,
+    pick_unambiguous_gold,
+)
 
 ROOT = Path(__file__).resolve().parents[1]
 MANIFEST_PATH = ROOT / "corpus" / "auth0" / "docs" / "manifest.json"
@@ -24,12 +30,8 @@ FORUM_RAW = ROOT / "corpus" / "auth0" / "forum" / "raw"
 OUT_PATH = ROOT / "datasets" / "retrieval_golden.jsonl"
 SPOT_CANDIDATES = ROOT / "datasets" / "spot_check_candidates.jsonl"
 COVERAGE_PATH = ROOT / "datasets" / "coverage_report.json"
+AMBIGUOUS_PATH = ROOT / "datasets" / "build_golden_ambiguous.jsonl"
 
-DOC_BASE = "https://auth0.com/docs"
-DOCS_HREF_RE = re.compile(
-    r"https?://(?:www\.)?auth0\.com/docs(/[^\s\"'<>#]+)?",
-    re.IGNORECASE,
-)
 EMAIL_RE = re.compile(r"[\w.+-]+@[\w-]+\.[\w.]+")
 # tenant-looking hosts: foo.us.auth0.com / foo.eu.auth0.com / custom.auth0.com
 TENANT_RE = re.compile(
@@ -78,95 +80,6 @@ HAND_ABSURDIST: list[str] = [
 ]
 
 
-def normalize_path(path: str) -> str:
-    path = path.strip()
-    if not path.startswith("/"):
-        path = "/" + path
-    path = path.split("#", 1)[0].split("?", 1)[0]
-    if path.endswith(".md"):
-        path = path[: -len(".md")]
-    if path.endswith("/index"):
-        path = path[: -len("/index")] or "/"
-    if len(path) > 1 and path.endswith("/"):
-        path = path.rstrip("/")
-    return path or "/"
-
-
-def follow_redirects(path: str, redirects: dict[str, str], limit: int = 10) -> str:
-    seen: set[str] = set()
-    cur = normalize_path(path)
-    for _ in range(limit):
-        if cur in seen:
-            break
-        seen.add(cur)
-        nxt = redirects.get(cur)
-        if not nxt:
-            break
-        cur = normalize_path(nxt)
-    return cur
-
-
-def html_to_text(html: str) -> str:
-    soup = BeautifulSoup(html or "", "html.parser")
-    for tag in soup(["script", "style"]):
-        tag.decompose()
-    text = soup.get_text("\n", strip=True)
-    text = unescape(text)
-    text = re.sub(r"\n{3,}", "\n\n", text)
-    return text.strip()
-
-
-def extract_docs_links(html: str) -> list[str]:
-    links: list[str] = []
-    soup = BeautifulSoup(html or "", "html.parser")
-    for a in soup.find_all("a", href=True):
-        href = a["href"]
-        if "auth0.com/docs" in href:
-            links.append(href)
-    for m in DOCS_HREF_RE.finditer(html or ""):
-        links.append(m.group(0))
-    out: list[str] = []
-    seen: set[str] = set()
-    for link in links:
-        path = link
-        if "auth0.com/docs" in link:
-            path = link.split("auth0.com/docs", 1)[1]
-        path = normalize_path(path)
-        if path == "/" or path.startswith("/api"):
-            continue
-        canon_url = f"{DOC_BASE}{path}"
-        if canon_url not in seen:
-            seen.add(canon_url)
-            out.append(canon_url)
-    return out
-
-
-def resolve(
-    url: str,
-    url_to_id: dict[str, str],
-    redirects: dict[str, str],
-    id_to_doc: dict,
-) -> tuple[str, str] | None:
-    """Resolve only against the MIT mirror manifest — no synthetic IDs (BUG-001)."""
-    path = url
-    if "auth0.com/docs" in url:
-        path = url.split("auth0.com/docs", 1)[1]
-    path = normalize_path(path)
-    if path in {"/", ""}:
-        return None
-    candidates = [
-        path,
-        follow_redirects(path, redirects),
-        f"{DOC_BASE}{path}",
-        f"{DOC_BASE}{follow_redirects(path, redirects)}",
-    ]
-    for c in candidates:
-        gold_id = url_to_id.get(c)
-        if gold_id and gold_id in id_to_doc:
-            return gold_id, id_to_doc[gold_id]["canonical_url"]
-    return None
-
-
 def redact_question(text: str) -> str:
     """Redact emails and tenant hosts at build time (BUG-009)."""
     email_i = 0
@@ -210,23 +123,6 @@ def question_from_topic(topic: dict) -> str:
     else:
         q = title
     return redact_question(truncate_question(q))
-
-
-def accepted_answer_htmls(topic: dict) -> list[str]:
-    htmls: list[str] = []
-    for ans in topic.get("accepted_answers") or []:
-        if ans.get("cooked"):
-            htmls.append(ans["cooked"])
-    for p in topic.get("post_stream", {}).get("posts") or []:
-        if p.get("accepted_answer") and p.get("cooked"):
-            htmls.append(p["cooked"])
-    seen: set[str] = set()
-    out: list[str] = []
-    for h in htmls:
-        if h not in seen:
-            seen.add(h)
-            out.append(h)
-    return out
 
 
 def pair_id(question: str, gold_doc_id: str | None, thread_id: int | str) -> str:
@@ -288,6 +184,7 @@ def build(
     id_to_doc = {d["gold_doc_id"]: d for d in manifest["documents"]}
 
     answerable: list[dict] = []
+    ambiguous: list[dict] = []
     skipped_unresolved = 0
     seen_q: set[str] = set()
 
@@ -316,19 +213,28 @@ def build(
         if not htmls:
             continue
 
-        resolved: list[tuple[str, str]] = []
-        for html in htmls:
-            for link in extract_docs_links(html):
-                hit = resolve(link, url_to_id, redirects, id_to_doc)
-                if hit:
-                    resolved.append(hit)
-
+        resolved = collect_resolved_hits(htmls, url_to_id, redirects, id_to_doc)
         if not resolved:
             # No mirror-backed docs link — skip (do NOT invent unanswerable labels) BUG-002
             skipped_unresolved += 1
             continue
 
-        gold_id, gold_url = resolved[0]
+        candidates = aggregate_candidates(resolved)
+        picked = pick_unambiguous_gold(candidates)
+        if picked is None:
+            ambiguous.append(
+                {
+                    "thread_id": tid,
+                    "source_thread_url": thread_url,
+                    "question": question,
+                    "candidates": candidates,
+                    "reason": "ambiguous_multi_candidate",
+                }
+            )
+            seen_q.add(qkey)
+            continue
+
+        gold_id, gold_url = picked
         row = {
             "id": pair_id(question, gold_id, tid),
             "question": question,
@@ -336,6 +242,8 @@ def build(
             "gold_doc_id": gold_id,
             "source_thread_url": thread_url,
             "answerable": True,
+            "label_source": "original",
+            "label_reviewed": False,
         }
         answerable.append(row)
         seen_q.add(qkey)
@@ -384,10 +292,17 @@ def build(
         if not answerable
         else 100.0 * (len(answerable) - len(missing)) / len(answerable),
         "skipped_unresolved_forum_topics": skipped_unresolved,
+        "ambiguous_multi_candidate": len(ambiguous),
         "forum_files_scanned": len(files),
     }
     COVERAGE_PATH.write_text(json.dumps(coverage, indent=2) + "\n", encoding="utf-8")
     print(json.dumps(coverage))
+
+    AMBIGUOUS_PATH.parent.mkdir(parents=True, exist_ok=True)
+    with AMBIGUOUS_PATH.open("w", encoding="utf-8") as f:
+        for row in ambiguous:
+            f.write(json.dumps(row, ensure_ascii=False) + "\n")
+    print(f"wrote {AMBIGUOUS_PATH}: {len(ambiguous)} ambiguous threads (flagged for review)")
 
     if require_full_coverage and (synthetic or missing):
         raise SystemExit(

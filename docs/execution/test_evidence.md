@@ -35,7 +35,7 @@ diagnosis.
 ## Stage 0 — Prove retrieval
 
 **Gate:** recall@10 ≥ 0.85 · MRR ≥ 0.60
-**Dataset:** `backend/evals/datasets/retrieval_golden.jsonl` (359 answerable + 31 unanswerable)
+**Dataset:** `backend/evals/datasets/retrieval_golden.jsonl` (354 answerable + 36 unanswerable after 0.7)
 **Runner:** `uv run python -m evals.runners.retrieval`
 
 | Date | Commit | Metric | Threshold | Measured | Pass | Notes |
@@ -49,11 +49,68 @@ diagnosis.
 **Configuration to record with each run:** embedding model, chunk size, chunk overlap, RRF weights,
 reranker model, top-k before and after rerank.
 
-**Status:** task 0.6 done; Stage 0 gate **not** cleared. Next: **golden remediation (BUG-014)** before more embedder sweeps.
+**Status:** task 0.8 paused/closed on available evidence; Stage 0 gate **not** cleared. TinyBERT CE
+over pool≥100 **hurts** vs remediated RRF. MiniLM full sweep **aborted** (CPU ~3–4h; stopped).
+Best measured: remediated RRF dense_w=2 recall@10 **0.393** / MRR **0.204**.
 
 **Diagnosis (2026-08-01 FAIL):** Pre-rerank hybrid with `bge-small-en-v1.5` recovers the gold doc
 in top-10 for only ~31% of answerable questions. Smoke hit@50 (60%) overstated gate readiness.
 Unanswerable mean top1 RRF 0.0298 (excluded from gate metrics).
+
+### Task 0.8 (2026-08-04) — CE rerank over larger pool (remediated golden)
+
+Store: `auth0_chunks_bge_base_c256.sqlite`. First-stage dense_w=2. CE scores **unique docs**
+(highest-RRF chunk text per doc) — see `retrieve.py` Task 0.8 change (`rerank.unit=unique_docs`).
+
+Baseline to beat: remediated RRF dense_w=2 pool@50 → recall@10 **0.3927** / MRR **0.2037**.
+
+| Date | Commit | Config | recall@10 | MRR | Pass | Notes |
+|---|---|---|---|---|---|---|
+| 2026-08-04 | `83e583d`+wip | RRF dense_w=2 (0.7 re-baseline) | **0.3927** | **0.2037** | FAIL | control |
+| 2026-08-04 | `83e583d`+wip | TinyBERT CE @100 unique docs | 0.3136 | 0.1716 | FAIL | **hurts** Δ −0.079 |
+| 2026-08-04 | `83e583d`+wip | TinyBERT CE @200 unique docs | 0.3192 | 0.1717 | FAIL | **hurts**; larger pool ≠ rescue |
+| 2026-08-04 | `83e583d`+wip | MiniLM-L-12 CE @100 | — | — | — | **aborted** — est. ~3–4h CPU; stopped on request; no metrics |
+
+Timing probe (n=5, before abort): MiniLM ~31–39s/q → full set ~3–4h on this machine.
+
+**Gate credibility call:** FlashRank **TinyBERT is not a path to 0.85** on this corpus — it
+degrades ranking vs RRF. Stronger CE (MiniLM) remains **unmeasured** at full-set scale under CPU
+budget. `fused_hit@500 ≈ 0.90` still says candidates exist; ranking quality is unsolved.
+Do **not** lower the gate on this evidence alone. Next ranking work needs either faster CE infra
+(GPU / quantized / sampled pilot before full) or a different second-stage approach — not more
+TinyBERT pool sweeps.
+
+Reports: `retrieval_c256_d2_tiny_p100_*.json`, `retrieval_c256_d2_tiny_p200_*.json`.
+
+### Task 0.7 (2026-08-04) — golden-label remediation re-baseline (BUG-014)
+
+**RE-BASELINE** after remediating `retrieval_golden.jsonl` (20 relabeled, 5 → unanswerable,
+133 confirmed on triage queue; answerable n **359 → 354**). Same store/config as 0.6 best:
+`bge-base` c256, `dense_weight=2`. Sidecar: `retrieval_golden_pre_remediation.jsonl`.
+
+| Date | Commit | Config | recall@10 | MRR | Pass | Notes |
+|---|---|---|---|---|---|---|
+| 2026-08-02 | `2f20435`+wip | c256 dense_w=2 (pre-remediation) | 0.3677 | 0.1923 | FAIL | prior best |
+| 2026-08-04 | `83e583d`+wip | **c256 dense_w=2 remediated** | **0.3927** | **0.2037** | FAIL | **re-baseline**; Δ +0.025 / +0.011 |
+
+First-stage audit post-remediation (`first_stage_audit_c256_remediated.json`):
+
+| Pool k | dense_hit | lexical_hit | fused_hit | recall@10 (RRF) |
+|---|---|---|---|---|
+| 50 | 0.588 | 0.421 | 0.593 | 0.376 |
+| 100 | 0.684 | 0.559 | 0.669 | 0.356 |
+| 200 | 0.777 | 0.655 | 0.782 | 0.350 |
+| 500 | 0.825 | 0.760 | **0.898** | 0.356 |
+
+Channel @500: neither **0.099** (35 complete misses, was 41). `fused_hit@500` **0.898**.
+
+**Gate credibility call:** **0.85 / 0.60 is still not a near-term target on RRF alone.** Label
+remediation helped modestly (+2.5pp recall@10) but the gap remains ~**0.46** recall@10 /
+~**0.40** MRR. Candidates are retrievable (`fused_hit@500 ≈ 0.90`); **ranking is the bottleneck**.
+Do not recalibrate the gate down yet — try stronger ranking (larger pool + cross-encoder) first.
+Do **not** resume pure embedder sweeps.
+
+Reports: `retrieval_c256_dense2_remediated_*.json`, `first_stage_audit_c256_remediated.json`.
 
 ### Task 0.6 (2026-08-02) — first-stage audit + fusion/prefix sweeps
 

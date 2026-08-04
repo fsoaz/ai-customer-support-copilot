@@ -166,7 +166,7 @@ def analyze(
         sample = low + mid
 
         return {
-            "task": "0.6",
+            "task": "first_stage_audit",
             "store_db": str(db_path),
             "embedding_model": model_name,
             "chunk_tokens": meta.get("chunk_tokens"),
@@ -175,6 +175,8 @@ def analyze(
             "channel_fractions": {k: round(v / n, 4) for k, v in channel.items()},
             "pool_curve": per_k,
             "complete_misses": len(miss_rows),
+            "complete_miss_ids": [r["id"] for r in miss_rows],
+            "complete_misses_detail": miss_rows,
             "miss_sample": sample,
             "spot_check_prior": {
                 "n_reviewed": 20,

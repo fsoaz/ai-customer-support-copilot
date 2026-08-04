@@ -23,6 +23,51 @@ direction changes. Do not write one for routine implementation that the diff exp
 
 ---
 
+## 2026-08-04 — Stage 0 — Task 0.8: TinyBERT CE hurts; MiniLM full run aborted
+
+**Changed:** Doc-level CE candidates in `retrieve.py` (unique docs from fused pool). Full TinyBERT
+sweeps on remediated golden at pool/candidates 100 and 200 (dense_w=2). Started MiniLM-L-12 @100;
+stopped on request before completion (~3–4h CPU estimate from n=5 probe).
+
+**Measured (vs RRF 0.393 / 0.204):** TinyBERT @100 → **0.314 / 0.172**; @200 → **0.319 / 0.172**.
+Larger TinyBERT pools do not recover the loss.
+
+**Why stop MiniLM:** Full-set CPU cost too high for this machine/session; no partial report was
+written (runner only emits at end).
+
+**Decision:** Close 0.8 on available evidence. **TinyBERT is dead.** Gate **0.85 stays**. Next
+(0.9): affordable stronger-ranking pilot (GPU / quantized / small-n MiniLM) or alt second-stage —
+not more TinyBERT sweeps, not silent gate lowering.
+
+**Unblocks:** Task 0.9 planning with clear negative result on TinyBERT.
+
+**Open:**
+- MiniLM quality on this golden still unknown
+- Whether 0.85 is reachable with any CPU-only CE at full n
+
+## 2026-08-04 — Stage 0 — Task 0.7 remediation: labels helped little; ranking is the bottleneck
+
+**Changed:** BUG-014 remediation pipeline (`collect_candidates`, `judge_candidates`,
+`apply_remediation`); hoisted `golden_links`; `build_golden` skips ambiguous multi-candidate
+threads instead of blind `resolved[0]`. Applied 20 relabels + 5 → unanswerable on a 158-row triage
+queue after spot-check (raw heuristic disagree 40% → corrections + conservative overlap gate).
+Re-baseline on same store: recall@10 **0.393** / MRR **0.204** (Δ +0.025 / +0.011).
+`fused_hit@500` **0.898**; complete misses 41 → 35.
+
+**Why:** Measured metrics were optimizing against contaminated golds. Needed a trusted baseline
+before more ranking or embedder work.
+
+**Decision:** Gate **0.85 / 0.60 stays**; it is not near-term on RRF alone. Label noise was not the
+sole cause. **Pivot to Task 0.8 — ranking quality** (stronger CE over larger pool). Do not resume
+pure embedder sweeps; do not silently lower the gate yet.
+
+**Unblocks:** Task 0.8 ranking experiments on a remediated golden.
+
+**Open:**
+- Heuristic judge disagree rate was high; LLM judge (`OPENAI_API_KEY`) not run this pass
+- Remaining single-candidate noise outside the triage queue still unreviewed
+- MiniLM/stronger CE CPU cost vs quality tradeoff
+
 ## 2026-08-02 — Stage 0 — Task 0.6 audit: gate not solvable without golden fix
 
 **Changed:** First-stage miss audit (`evals.scripts.analyze_first_stage`) on the c256 store;

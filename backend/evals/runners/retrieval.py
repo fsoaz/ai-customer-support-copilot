@@ -171,7 +171,7 @@ def run_retrieval_eval(
     }
 
     report = {
-        "task": "0.4" if rerank else "0.3",
+        "task": "0.8" if rerank else "0.3",
         "runner": "evals.runners.retrieval",
         "created_at": datetime.now(UTC).isoformat(),
         "elapsed_seconds": round(elapsed, 2),
@@ -194,6 +194,7 @@ def run_retrieval_eval(
                     "enabled": True,
                     "model": rerank_model,
                     "candidates": rerank_candidates,
+                    "unit": "unique_docs",
                 }
                 if rerank
                 else None

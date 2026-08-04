@@ -1,0 +1,18 @@
+{
+  "counts": {
+    "relabeled": 20,
+    "confirmed": 133,
+    "to_unanswerable": 5,
+    "untouched": 232
+  },
+  "answerable": 354,
+  "unanswerable": 36,
+  "spot_stats": {
+    "reviewed": 20,
+    "disagree": 0,
+    "disagree_rate": 0.0,
+    "max_disagree_rate": 0.15,
+    "ok": true
+  },
+  "forced": false
+}

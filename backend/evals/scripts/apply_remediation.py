@@ -105,6 +105,12 @@ def apply_one(row: dict, judgment: dict) -> tuple[dict, str]:
     return out, "relabeled"
 
 
+def approved_for_application(spot_row: dict) -> bool:
+    """Return whether a spot-check row explicitly approves applying its judgment."""
+    verdict = spot_row.get("human_verdict")
+    return verdict == "agree" or (verdict == "disagree" and bool(spot_row.get("human_correction")))
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--golden", type=Path, default=GOLDEN_PATH)
@@ -184,18 +190,18 @@ def main() -> int:
             counts["untouched"] += 1
             continue
 
-        if args.approved_only and rid in spot_by_id:
-            if spot_by_id[rid].get("human_verdict") != "agree":
-                # Skip disagreed without correction already handled above.
-                if spot_by_id[rid].get("human_verdict") == "disagree" and not spot_by_id[rid].get(
-                    "human_correction"
-                ):
-                    updated = dict(row)
-                    updated["label_reviewed"] = True
-                    updated["reviewer_note"] = "spot disagree without correction; left unchanged"
-                    out_rows.append(updated)
-                    counts["untouched"] += 1
-                    continue
+        if (
+            args.approved_only
+            and rid in spot_by_id
+            and not approved_for_application(spot_by_id[rid])
+        ):
+            updated = dict(row)
+            if spot_by_id[rid].get("human_verdict") == "disagree":
+                updated["label_reviewed"] = True
+                updated["reviewer_note"] = "spot disagree without correction; left unchanged"
+            out_rows.append(updated)
+            counts["untouched"] += 1
+            continue
 
         updated, action = apply_one(row, judgments[rid])
         out_rows.append(updated)

@@ -17,6 +17,10 @@ corpus tree. Every number below was measured, not estimated.
 Sections 1–7 are preserved as written at audit time and are **no longer current**. They record what
 was found, so the corrections stay distinguishable from accidents later. Read §8 for present state.
 
+**A second, narrower audit ran 2026-08-11 over code this report did not cover (the harness/runner,
+not the golden-set builder) — see [§9](#9-second-audit--eval-harness--runner-scope-2026-08-11),
+remediated same day.**
+
 ---
 
 ## 1. Executive summary
@@ -520,3 +524,118 @@ caught BUG-001 at build time.
 written. Corrected to 359. Cosmetic, but [test_evidence.md](test_evidence.md) holds that a gate
 whose passing nobody can point to did not pass, and records with drifting numbers erode exactly
 that.
+
+---
+
+## 9. Second audit — eval harness & runner scope (2026-08-11)
+
+**Reviewed:** 2026-08-11. **Scope:** `evals/harness/*`, `evals/runners/retrieval.py`, and every
+script added by `4cfd5b2` (`golden_links.py`, `apply_remediation.py`, `collect_candidates.py`,
+`judge_candidates.py`) — the code §1–8 above explicitly did not cover, since it didn't exist yet at
+the first audit. **Explicitly out of scope:** product API, UI — still absent.
+**Method:** ran the actual test suite (the committed `.venv` was unusable in the review environment
+— stale interpreter symlink — so a throwaway venv was built from `pyproject.toml`), ran
+`ruff check`, and did a full static read of every file in scope.
+
+**Status: remediated and re-verified 2026-08-11, same day as the finding.**
+
+### 9.1 Smoke test — fail (at time of finding), pass after fix
+
+`cd backend && pytest -q` — the default invocation, no flags — errored out during collection rather
+than running:
+
+```
+ImportError: cannot import name 'follow_redirects' from 'evals.scripts.build_golden'
+```
+
+With `--continue-on-collection-errors`, the other 3 test files' 17 tests passed; `tests/
+test_eval_helpers.py`'s 7 did not run at all. The retrieval math itself (RRF, metrics, chunking,
+rerank plumbing, hybrid retrieve, SQLite store) read as correct on inspection — this audit found no
+defects in that code, only in the two files below.
+
+### 9.2 Issue register
+
+**BUG-EH-001 — `pytest` (default invocation) could not collect `tests/test_eval_helpers.py`**
+
+**Domain:** test infra **Severity:** high **Priority:** P0 → **fixed**
+
+**Root cause:** `4cfd5b2` moved `normalize_path`/`follow_redirects` out of
+`evals/scripts/build_golden.py` into the new `evals/harness/golden_links.py` (157 lines changed in
+`build_golden.py` alone) but never updated `tests/test_eval_helpers.py`, which still imported both
+names from the old location.
+
+**User impact:** the 7 uncollected tests included `test_redact_question_emails_and_tenants` and
+`test_truncate_keeps_head_and_tail` — the regression guards written for BUG-009 (PII reaching
+third-party embedding/LLM providers) and BUG-013 (mid-sentence truncation) in §4 above. Neither was
+being exercised by any command a developer runs by default. `ruff check` passed clean throughout —
+it cannot detect a name imported from a module that no longer exports it. No CI exists
+(`.github/` absent) to have caught it either, despite [../standards/testing.md](../standards/testing.md)
+naming `pytest -m "not eval"` as a blocking PR gate.
+
+**Fix:** `tests/test_eval_helpers.py` now imports `follow_redirects`/`normalize_path` from
+`evals.harness.golden_links`.
+
+**Suggested fix location:** `backend/tests/test_eval_helpers.py:5-11` (import block).
+
+---
+
+**BUG-EH-002 — `apply_remediation.py --approved-only` did not gate on a pending verdict**
+
+**Domain:** input validation / logic **Severity:** medium **Priority:** P2 → **fixed**
+
+**Steps to reproduce (pre-fix)**
+
+1. `judge_candidates.py` writes `remediation_spot_check.jsonl` with `human_verdict: null` for every
+   row before human review (`judge_candidates.py:186,197`; its own stdout says
+   `human_verdict=null`).
+2. Run `apply_remediation.py --approved-only` before any row is reviewed.
+3. The gate only special-cased `human_verdict == "disagree" and no human_correction` → skip.
+   Any other value, including `null`/pending, fell through to `apply_one()` and was applied.
+
+**Expected:** per the flag's own `--help` text — *"Only apply judgments whose id has
+human_verdict=agree"* — a pending row should not be applied.
+
+**User impact:** the flag is unused elsewhere in the codebase and unreferenced in docs, so no
+committed data was corrupted by it — this was a latent defect, not a realized one. But it is the
+one control whose entire purpose is "don't touch the golden set until a human signs off," and it
+failed at that job for the exact pending state its own sibling script produces. The golden set is
+the input to every recall@10/MRR number Stage 0 has recorded.
+
+**Fix:** extracted `approved_for_application(spot_row)` as a single explicit allowlist —
+`human_verdict == "agree"`, or `"disagree"` with a `human_correction` present — replacing the old
+skip-only-if-disagree-without-correction conditional. Added
+`test_approved_for_application_requires_explicit_review` (unit) and
+`test_approved_only_does_not_apply_pending_judgment` (CLI-level, drives `apply_remediation.main()`
+end-to-end against a synthetic `human_verdict: null` row and asserts the golden row is left
+untouched).
+
+**Suggested fix location:** `backend/evals/scripts/apply_remediation.py:108` (new helper),
+`:187-198` (call site, pre-fix).
+
+### 9.3 Minor findings — left open, deliberately
+
+| ID | Severity/Priority | Finding | Fix location |
+|---|---|---|---|
+| MIN-EH-003 | low/P3 | `normalize_path`/`follow_redirects` are duplicated verbatim between `evals/harness/golden_links.py` and `evals/scripts/parse_docs_manifest.py` instead of one importing the other — the same kind of drift that caused BUG-EH-001 | `backend/evals/scripts/parse_docs_manifest.py:64-90` |
+| MIN-EH-004 | low/P3 | `4cfd5b2` (22 files, +3003/-513) has no corresponding `work_log.md` entry, breaking this project's own "history goes to work_log.md" convention | [work_log.md](work_log.md) |
+
+### 9.4 Remediation verification — 2026-08-11
+
+Re-measured against the working tree, not accepted from the fix summary.
+
+| Claim | Measured | Result |
+|---|---|---|
+| Full default `pytest -q` suite passes | `26 passed` | ✅ |
+| `tests/test_eval_helpers.py` alone | `9 passed` (7 original + 2 new regression tests) | ✅ |
+| `ruff check .` | `All checks passed!` | ✅ |
+| `git diff --check` (whitespace) | clean | ✅ |
+| New CLI regression test fails against pre-fix logic | traced by hand: pre-fix, a `human_verdict: null` spot row falls through the `!= "agree"` branch (no `continue`) and reaches `apply_one()`, changing `gold_doc_id`; the test asserts it stays `"original"` — a real regression guard, not a tautology | ✅ |
+
+### 9.5 Issue disposition
+
+| ID | Status |
+|---|---|
+| BUG-EH-001 | fixed |
+| BUG-EH-002 | fixed |
+| MIN-EH-003 | deferred — correct call, low blast radius, runs once per script invocation |
+| MIN-EH-004 | deferred — process gap, not a code defect; noted so it isn't repeated |

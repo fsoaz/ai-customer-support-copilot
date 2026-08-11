@@ -2,14 +2,12 @@
 
 from __future__ import annotations
 
-from evals.scripts.build_golden import (
-    diversify,
-    follow_redirects,
-    normalize_path,
-    pair_id,
-    redact_question,
-    truncate_question,
-)
+import json
+
+from evals.harness.golden_links import follow_redirects, normalize_path
+from evals.scripts import apply_remediation
+from evals.scripts.apply_remediation import approved_for_application
+from evals.scripts.build_golden import diversify, pair_id, redact_question, truncate_question
 from evals.scripts.parse_docs_manifest import doc_id_for
 from evals.scripts.parse_docs_manifest import normalize_path as docs_normalize_path
 
@@ -66,3 +64,60 @@ def test_truncate_keeps_head_and_tail() -> None:
     assert "TAIL_QUESTION?" in out
     assert "…" in out
     assert len(out) <= 200
+
+
+def test_approved_for_application_requires_explicit_review() -> None:
+    assert approved_for_application({"human_verdict": "agree"})
+    assert approved_for_application(
+        {
+            "human_verdict": "disagree",
+            "human_correction": {"chosen_doc_id": "corrected-doc"},
+        }
+    )
+    assert not approved_for_application({"human_verdict": None})
+    assert not approved_for_application({"human_verdict": "pending"})
+    assert not approved_for_application({"human_verdict": "disagree"})
+
+
+def test_approved_only_does_not_apply_pending_judgment(tmp_path, monkeypatch) -> None:
+    golden = tmp_path / "golden.jsonl"
+    judgments = tmp_path / "judgments.jsonl"
+    spot = tmp_path / "spot.jsonl"
+    sidecar = tmp_path / "sidecar.jsonl"
+    report = tmp_path / "report.json"
+
+    golden.write_text(
+        json.dumps({"id": "q1", "gold_doc_id": "original", "answerable": True}) + "\n",
+        encoding="utf-8",
+    )
+    judgments.write_text(
+        json.dumps({"id": "q1", "chosen_doc_id": "replacement"}) + "\n",
+        encoding="utf-8",
+    )
+    spot.write_text(
+        json.dumps({"id": "q1", "human_verdict": None}) + "\n",
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(
+        "sys.argv",
+        [
+            "apply_remediation.py",
+            "--golden",
+            str(golden),
+            "--judgments",
+            str(judgments),
+            "--spot-check",
+            str(spot),
+            "--sidecar",
+            str(sidecar),
+            "--report",
+            str(report),
+            "--force-unverified",
+            "--approved-only",
+        ],
+    )
+
+    assert apply_remediation.main() == 0
+    [result] = apply_remediation.load_jsonl(golden)
+    assert result["gold_doc_id"] == "original"
+    assert result.get("label_reviewed") is not True

@@ -23,6 +23,45 @@ direction changes. Do not write one for routine implementation that the diff exp
 
 ---
 
+## 2026-08-11 — Stage 0 — QA audit of the eval harness/runner; two bugs fixed same day
+
+**Changed:** Independent QA pass (not tied to task 0.9) over code the original `qa_report_stage0.md`
+audit did not cover: `evals/harness/*`, `evals/runners/retrieval.py`, and the scripts added in
+`4cfd5b2` (`golden_links.py`, `apply_remediation.py`, `collect_candidates.py`,
+`judge_candidates.py`). Full write-up in [qa_report_stage0.md §9](qa_report_stage0.md#9-second-audit--eval-harness--runner-scope-2026-08-11).
+
+Two bugs found and fixed same day:
+
+1. **`pytest` (default invocation) errored out before running.** `4cfd5b2` moved
+   `normalize_path`/`follow_redirects` from `build_golden.py` into the new `golden_links.py` but
+   left `tests/test_eval_helpers.py` importing them from the old location. 7 of 26 tests —
+   including the BUG-009 (PII redaction) and BUG-013 (truncation) regression guards — were not
+   collected by a bare `pytest` run. `ruff check` stayed green throughout; it cannot catch a
+   cross-module missing-name import. Fixed: corrected the import source.
+2. **`apply_remediation.py --approved-only` did not gate on an unreviewed verdict.** The flag's own
+   help text promises it only applies judgments with `human_verdict=agree`, but the code only
+   special-cased `disagree`; a `None`/pending verdict (the exact state `judge_candidates.py` writes
+   before human review) fell through and got applied anyway. Not exercised by any committed data —
+   latent, not a realized corruption. Fixed: extracted `approved_for_application()` as a single
+   explicit allowlist (`agree`, or `disagree` with a `human_correction`), with unit + CLI-level
+   regression tests for the pending-verdict case.
+
+**Why:** Both bugs sat in the two things that decide whether Stage 0's numbers can be trusted at
+all — the test suite that guards prior fixes, and the script that mutates the golden set the gate
+is scored against. Neither was caught by the two automated checks that do exist (`ruff`, no CI).
+
+**Unblocks:** Nothing blocked — task 0.9 (ranking pilot) was never dependent on this. Records the
+audit so `pytest`'s green state after `4cfd5b2` isn't mistaken for "tests were checked."
+
+**Open:**
+- No CI exists yet (`.github/` absent) despite `docs/standards/testing.md` naming `pytest` and
+  `ruff` as blocking PR gates — this is *why* BUG-EH-001 shipped invisibly. Still open from the
+  original audit (BUG-012).
+- Two P3 findings from the same audit deliberately left unfixed: duplicated
+  `normalize_path`/`follow_redirects` logic between `golden_links.py` and `parse_docs_manifest.py`,
+  and `4cfd5b2` itself has no work_log entry (a gap this entry does not retroactively fill for that
+  commit — it predates this one).
+
 ## 2026-08-04 — Stage 0 — Task 0.8: TinyBERT CE hurts; MiniLM full run aborted
 
 **Changed:** Doc-level CE candidates in `retrieve.py` (unique docs from fused pool). Full TinyBERT
